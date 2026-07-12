@@ -1,0 +1,49 @@
+@import url(https://fonts.googleapis.com/css?family=Inter:100,200,300,regular,500,600,700,800,900,100italic,200italic,300italic,italic,500italic,600italic,700italic,800italic,900italic);
+*{
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: "Inter";
+}
+:root{
+	--color-main: #0d0f14;
+	--color-main-side: #14171f;
+	--color-ai-bubble: #1b1f29;
+	--color-user-bubble: #2a3142;
+	--color-input: #232836;
+
+	--color-border: #2a2f3d;
+	--color-border-strong: #3a4255;
+
+	--color-text: #f4f5f8;
+	--color-text-black: #1A1206;
+	--color-text-placeholder: #5d6377;
+
+	--color-accent: #f5a524;
+	--color-accent-hover: #ffb84d;
+	--color-accent-soft: rgba(245, 165, 36, 0.12);
+
+	--color-success: #4ade80;
+	--color-danger: #f87171;
+	
+	--color-icon: #C8CCD6;
+	--color-icon-hover: #F5A524;
+}
+html{
+	width: 100vw;
+	height: 100vh;
+}
+body{
+	width: 100vw;
+	height: 100vh;
+}
+::-webkit-scrollbar{
+	width: 7px;
+	border-radius: 6px;
+	background: var(--color-text-placeholder);
+}
+::-webkit-scrollbar-thumb{
+	width: 5px;
+	background: var(--color-text);
+	border-radius: 6px;
+}
