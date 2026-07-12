@@ -7,11 +7,9 @@ if exist dist rmdir /s /q dist
 
 call npm run build
 
-call g++ -std=c++17 -O2 -Wall -Wextra server/main.cpp -o solx.exe ^
-    -I server/openssl ^
-    server/openssl/libssl.a ^
-    server/openssl/libcrypto.a ^
-    -lws2_32 -lcrypt32 -lpthread -static
+cd server
+call go build -o ..\dist\solx.exe
+cd ..
 
 if %errorlevel% equ 0 (
     echo Build successful!
