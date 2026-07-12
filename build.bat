@@ -18,7 +18,5 @@ if %errorlevel% equ 0 (
     pause
 )
 
-move solx.exe dist/solx.exe
-
 if exist temp\config.json move temp\config.json dist\config.json
 if exist temp\presets.json move temp\presets.json dist\presets.json
