@@ -1,4 +1,5 @@
 import { onMounted, reactive } from "vue";
+import { useSettings } from "./useSettings";
 
 export const enum WindowsList{
 	CHAT = 1,
@@ -32,6 +33,24 @@ interface GlobalAppState{
 	selectedPlayGameId: number | null
 }
 
+const {settings} = useSettings();
+
+async function checkAI(){
+	try{
+		const res = await fetch(`${settings.baseUrl}/v1/models`, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+			"Authorization": `Bearer ${settings.token}`
+		}
+		});
+		return res;
+	}
+	catch{
+		return false;
+	}
+}
+
 const state = reactive<GlobalAppState>({
 	activeWindow: WindowsList.PRESETS,
 	AIActive: false,
@@ -57,7 +76,6 @@ async function loadPresets() {
 		return writePresets();
 	}
 	const presets = await res.json();
-	console.log('presets received: ', presets);
 	state.games = presets;
 }
 await loadPresets();
@@ -93,6 +111,7 @@ export function useGlobalState(){
 		setActiveWindow,
 		pushGame,
 		updateGame,
-		deleteGame
+		deleteGame,
+		checkAI
 	}
 }

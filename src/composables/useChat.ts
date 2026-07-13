@@ -17,7 +17,7 @@ interface ChatState {
 	token: string | null
 }
 
-const { state } = useGlobalState();
+const { state, checkAI } = useGlobalState();
 const { settings } = useSettings();
 
 const SYS_PROMPT =
@@ -63,17 +63,15 @@ function defineNewChat(id: number) {
 	chatState.sysMessage = sysMessage;
 }
 
-async function checkAI(): Promise<boolean> {
+async function checkAIStatus(): Promise<boolean> {
 	const baseURL = settings.baseUrl;
 	const model = settings.model;
 	const token = settings.token;
-	const res = await fetch(`${baseURL}/v1/models`, {
-		method: "GET",
-		headers: {
-			"Content-Type": "application/json",
-			"Authorization": `Bearer ${token}`
-		}
-	});
+	const res = await checkAI();
+	if(res === false){
+		alert("BaseURL is not reachable");
+		return false;
+	}
 	if (res.ok) {
 		chatState.baseURL = baseURL;
 		chatState.model = model;
@@ -124,7 +122,7 @@ async function sendAIRequest(messages?: Message[]): Promise<Message | false> {
 
 async function translate(str: string): Promise<string | null> {
 	if (!chatState.baseURL || !chatState.model || !chatState.token) {
-		const status = await checkAI();
+		const status = await checkAIStatus();
 		if (!status) { return null; }
 	}
 	const messages: Message[] = [
@@ -151,7 +149,7 @@ function pushMessage(message: Message){
 }
 
 async function sendAction(action: string): Promise<{status: false, message: string} | {status: true}>{
-	const status = await checkAI();
+	const status = await checkAIStatus();
 	if(!status){return {status: false, message: 'something went wrong'}}
 
 	const actionsCpy = chatState.actions;
@@ -198,7 +196,7 @@ async function sendAction(action: string): Promise<{status: false, message: stri
 }
 
 async function sendMessage(message: string): Promise<{status: false, message: string} | {status: true}>{
-	const status = await checkAI();
+	const status = await checkAIStatus();
 	if(!status){return {status: false, message: 'something went wrong'}}
 
 	message = message.trim();
