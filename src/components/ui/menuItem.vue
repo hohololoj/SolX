@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	const props = defineProps<{title: string, active?: boolean}>();
+	const props = defineProps<{title: string, active?: boolean, collapsed: boolean}>();
 	const emit = defineEmits<{
 		(e: 'click'): void
 	}>()
@@ -8,7 +8,7 @@
 <template>
 	<div @click="emit('click')" class="menu-item" :class="props.active ? 'menu-item_active' : ''">
 		<slot />
-		<p class="menu-item__value">
+		<p v-if="!props.collapsed" class="menu-item__value">
 			{{ props.title }}
 		</p>
 	</div>
@@ -27,7 +27,6 @@
 	padding: 0px 12px;
 	cursor: pointer;
 }
-
 .menu-item:hover {
 	background: rgba(245, 165, 36, 0.12);
 }

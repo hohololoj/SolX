@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reactive } from "vue";
 import Aside from "./components/blocks/aside.vue";
 import Chat from "./components/windows/chat.vue";
 import Modal from "./components/windows/modal.vue";
@@ -10,24 +11,36 @@ import { ModalsList, useUIState } from "./composables/useUIState.ts";
 const {state} = useGlobalState();
 const {UIState} = useUIState();
 
+interface AsideState{
+	collapsed: boolean
+}
+
+const asideState = reactive<AsideState>({collapsed: false});
+
 </script>
 
 <template>
-	<Aside/>
-	<div class="windows-container">
-		<Chat v-if="state.activeWindow === WindowsList.CHAT"/>
-		<Presets v-if="state.activeWindow === WindowsList.PRESETS"/>
-		<Settings v-if="state.activeWindow === WindowsList.SETTINGS"/>
+	<div class="app__inner" :class="asideState.collapsed ? 'app__inner_collapsed' : ''">
+		<Aside :state="asideState" />
+		<div class="windows-container">
+			<Chat v-if="state.activeWindow === WindowsList.CHAT" />
+			<Presets v-if="state.activeWindow === WindowsList.PRESETS" />
+			<Settings v-if="state.activeWindow === WindowsList.SETTINGS" />
+		</div>
+		<Modal v-if="UIState.activeModal !== ModalsList.NOTHING" />
 	</div>
-	<Modal v-if="UIState.activeModal !== ModalsList.NOTHING"/>
 </template>
 
 <style>
-	#app{
-		width: 100%;
+	.app__inner{
+		width: 100vw;
 		height: 100vh;
 		display: grid;
 		grid-template: 100% / 240px 1fr;
+		transition: grid-template-columns 0.2s ease;
+	}
+	.app__inner_collapsed{
+		grid-template: 100% / 69px 1fr;
 	}
 	.windows-container{
 		width: 100%;

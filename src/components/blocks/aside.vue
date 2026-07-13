@@ -5,21 +5,28 @@ import IconPresets from "../icons/icon-presets.vue";
 import Logo from "../ui/logo.vue";
 import MenuItem from "../ui/menuItem.vue";
 import IconSettings from "../icons/icon-settings.vue";
+import { reactive } from "vue";
 
 const {state, setActiveWindow} = useGlobalState();
+
+const props = defineProps<{state: {collapsed: boolean}}>()
+
+function handleToggleCollapse(){
+	props.state.collapsed = !props.state.collapsed;
+}
 
 </script>
 
 <template>
 	<div class="aside-container">
-		<Logo/>
+		<Logo :collapsed="props.state.collapsed" @toggle-collapse="handleToggleCollapse" />
 		<div class="aside__menu">
-			<MenuItem @click="setActiveWindow(WindowsList.CHAT)" :active="state.activeWindow === WindowsList.CHAT" title="Чат"><IconChat/></MenuItem>
-			<MenuItem @click="setActiveWindow(WindowsList.PRESETS)" :active="state.activeWindow === WindowsList.PRESETS" title="Пресеты"><IconPresets/></MenuItem>
+			<MenuItem :collapsed="props.state.collapsed" @click="setActiveWindow(WindowsList.CHAT)" :active="state.activeWindow === WindowsList.CHAT" title="Чат"><IconChat/></MenuItem>
+			<MenuItem :collapsed="props.state.collapsed" @click="setActiveWindow(WindowsList.PRESETS)" :active="state.activeWindow === WindowsList.PRESETS" title="Пресеты"><IconPresets/></MenuItem>
 		</div>
 		<div class="menu-item__settings" @click="setActiveWindow(WindowsList.SETTINGS)" :class="state.activeWindow === WindowsList.SETTINGS ? 'menu-item__settings_active' : ''">
 			<IconSettings/>
-			<p class="menu-item__settings__text">Настройки</p>
+			<p v-if="!props.state.collapsed" class="menu-item__settings__text">Настройки</p>
 		</div>
 	</div>
 </template>
@@ -30,7 +37,7 @@ const {state, setActiveWindow} = useGlobalState();
 	height: 100%;
 	display: grid;
 	grid-template-columns: 1fr;
-	grid-template-rows: 77px 1fr 41px;
+	grid-template-rows: min-content 1fr 41px;
 	row-gap: 16px;
 	padding: 16px 12px;
 	background: var(--color-main-side);
