@@ -1,4 +1,5 @@
 import { reactive } from "vue";
+import { tokenManager } from "./tokenManager";
 
 export const providerPresets = [
 	{
@@ -30,7 +31,9 @@ export interface Settings{
 	model: string,
 	activePreset: number,
 	port: string,
-	temperature: number
+	temperature: number,
+	maxTokens: number,
+	maxTokensPerMessage: number
 }
 
 const getPort = () => window.location.port;
@@ -41,10 +44,18 @@ const settings = reactive<Settings>({
 	model: '',
 	activePreset: SettingLocalId,
 	port: getPort(),
-	temperature: 0.7
+	temperature: 0.7,
+	maxTokens: 0,
+	maxTokensPerMessage: 0
 });
 
+function applyTokenLimits() {
+	tokenManager.setMaxTokens(settings.maxTokens);
+	tokenManager.setPerMessageLimit(settings.maxTokensPerMessage);
+}
+
 async function writeConfig() {
+	applyTokenLimits();
 	return fetch('/config', {
 		method: 'POST',
 		body: JSON.stringify(settings),
@@ -66,12 +77,15 @@ async function compareSettings(resSettings: Settings){
 }
 
 async function loadSettings(){
-	const response = await fetch('/config.json');
+	const response = await fetch('/config.json',{
+		cache: 'no-store'
+	});
 	if(!response.ok){
 		return writeConfig();
 	}
 	const resSettings = await response.json() as Settings;
 	await compareSettings(resSettings);
+	applyTokenLimits();
 }
 await loadSettings();
 
@@ -93,6 +107,7 @@ export function useSettings(){
 	return {
 		settings,
 		setActivePreset,
-		writeConfig
+		writeConfig,
+		applyTokenLimits
 	}
 }

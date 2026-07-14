@@ -6,7 +6,7 @@ import ButtonOk from "../ui/buttonOk.vue";
 import { computed } from "vue";
 import { useGlobalState, WindowsList } from "@/composables/useGlobalState.ts";
 
-const {settings, setActivePreset, writeConfig} = useSettings();
+const {settings, setActivePreset, writeConfig, applyTokenLimits} = useSettings();
 const {state} = useGlobalState();
 
 function handleSelectProviderClick(id: number){
@@ -16,7 +16,8 @@ function handleSelectProviderClick(id: number){
 async function handleSaveSettingsClick(){
 	if(!valid.value){return}
 	await writeConfig();
-	state.activeWindow = WindowsList.CHAT;
+	applyTokenLimits();
+	state.activeWindow = WindowsList.PRESETS;
 }
 
 const valid = computed(() => {
@@ -63,7 +64,27 @@ const valid = computed(() => {
 				</div>
 			</SettingsItem>
 
+			<SettingsItem :title="'Инфренс'">
+				<div class="setting-item__connection">
 
+					<div class="connection__item">
+						<h3 class="connection__title">Окно контекста</h3>
+						<input type="number" v-model="settings.maxTokens" class="connection__input">
+						<p class="connection__label">Максимальное количество токенов в рамках диалога</p>
+					</div>
+
+					<div class="connection__item">
+						<h3 class="connection__title">Максимально токенов на сообщение</h3>
+						<input type="number" v-model="settings.maxTokensPerMessage" class="connection__input">
+					</div>
+
+					<div class="connection__item">
+						<h3 class="connection__title">Температура</h3>
+						<input type="number" v-model="settings.temperature" class="connection__input">
+					</div>
+
+				</div>
+			</SettingsItem>
 
 			<div class="settings-control">
 				<ButtonOk @click="handleSaveSettingsClick" :is-ok="valid">Сохранить</ButtonOk>

@@ -107,7 +107,7 @@ export function useGlobalState(){
 	}
 
 	return{
-		state: state,
+		state,
 		setActiveWindow,
 		pushGame,
 		updateGame,
