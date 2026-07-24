@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { useGlobalState, WindowsList } from "@/composables/useGlobalState.ts";
 import IconChat from "../icons/icon-chat.vue";
 import IconPresets from "../icons/icon-presets.vue";
 import Logo from "../ui/logo.vue";
 import MenuItem from "../ui/menuItem.vue";
 import IconSettings from "../icons/icon-settings.vue";
-import { reactive } from "vue";
+import { composer } from "@/composables/useComposer.ts";
+import { WindowsList } from "@/composables/uiController.ts";
 
-const {state, setActiveWindow} = useGlobalState();
+const uiController = composer.uiController;
+const uiState = uiController.getUIState();
 
 const props = defineProps<{state: {collapsed: boolean}}>()
 
@@ -21,10 +22,29 @@ function handleToggleCollapse(){
 	<div class="aside-container">
 		<Logo :collapsed="props.state.collapsed" @toggle-collapse="handleToggleCollapse" />
 		<div class="aside__menu">
-			<MenuItem :collapsed="props.state.collapsed" @click="setActiveWindow(WindowsList.CHAT)" :active="state.activeWindow === WindowsList.CHAT" title="Чат"><IconChat/></MenuItem>
-			<MenuItem :collapsed="props.state.collapsed" @click="setActiveWindow(WindowsList.PRESETS)" :active="state.activeWindow === WindowsList.PRESETS" title="Пресеты"><IconPresets/></MenuItem>
+
+			<MenuItem 
+				:collapsed="props.state.collapsed"
+				@click="uiController.setActiveWindow(WindowsList.CHAT)"
+				:active="uiState.activeWindow === WindowsList.CHAT"
+				title="Чат"
+			>
+				<IconChat/>
+			</MenuItem>
+
+			<MenuItem
+				:collapsed="props.state.collapsed"
+				@click="uiController.setActiveWindow(WindowsList.PRESETS)"
+				:active="uiState.activeWindow === WindowsList.PRESETS"
+				title="Пресеты"
+			>
+				<IconPresets/>
+			</MenuItem>
 		</div>
-		<div class="menu-item__settings" @click="setActiveWindow(WindowsList.SETTINGS)" :class="state.activeWindow === WindowsList.SETTINGS ? 'menu-item__settings_active' : ''">
+		<div class="menu-item__settings"
+			@click="uiController.setActiveWindow(WindowsList.SETTINGS)"
+			:class="uiState.activeWindow === WindowsList.SETTINGS ? 'menu-item__settings_active' : ''"
+		>
 			<IconSettings/>
 			<p v-if="!props.state.collapsed" class="menu-item__settings__text">Настройки</p>
 		</div>

@@ -1,40 +1,36 @@
 <script setup lang="ts">
-import { ButtonTypes, ModalsList, useUIState } from "@/composables/useUIState";
 import PresetControlButton from "./presetControlButton.vue";
 import IconStart from "../icons/icon-start.vue";
 import IconEdit from "../icons/icon-edit.vue";
 import IconDelete from "../icons/icon-delete.vue";
-import { useGlobalState, WindowsList, type EditGame } from "@/composables/useGlobalState.ts";
-import { useChat } from "@/composables/useChat.ts";
+import { composer } from "@/composables/useComposer.ts";
+import { ButtonTypes, ModalsList, WindowsList } from "@/composables/uiController.ts";
 
-const {UIState} = useUIState();
-const {state} = useGlobalState();
-const {defineNewChat} = useChat();
+const presetsController = composer.presetsController;
+
+const uiController = composer.uiController;
+const chatController = composer.chatController;
+
+const presetsState = presetsController.getPresetsState();
 
 const props = defineProps<{id: number}>();
 
 function handleDeleteClick(id: number){
-	state.selectedGameIdToDelete = id;
-	UIState.activeModal = ModalsList.DELETE_CONFIRM;
+	presetsController.selectPresetToDelete(id);
+	uiController.setActiveModal(ModalsList.DELETE_CONFIRM);
 }
 function handleStartClick(id: number){
-	defineNewChat(id);
-	state.activeWindow = WindowsList.CHAT;
-	state.selectedPlayGameId = id;
+	chatController.defineNewChat(id);
+	uiController.setActiveWindow(WindowsList.CHAT);
+	presetsController.selectPresetToPlay(id);
 }
 function handleEditClick(id: number){
-	if(!state.games[id]){
+	if(!presetsState.presets[id]){
 		alert("something went wrong, game not found");
 		return;
 	}
-	const {tags, ...rest} = state.games[id];
-	const selectedGame: EditGame = {
-		...rest,
-		tags: tags.join(', '),
-		id: id
-	};
-	state.selectedEditGame = selectedGame;
-	UIState.activeModal = ModalsList.EDIT;
+	presetsController.selectPresetToEdit(id);
+	uiController.setActiveModal(ModalsList.EDIT);
 }
 	
 </script>
@@ -45,14 +41,14 @@ function handleEditClick(id: number){
 		<div class="preset-card__info">
 
 			<div class="preset-card__header">
-				<h2 class="preset-card__header__name">{{ state.games[props.id]!.name }}</h2>
-				<p class="preset-card__header__genre">{{ state.games[props.id]!.genre }}</p>
+				<h2 class="preset-card__header__name">{{ presetsState.presets[props.id]!.name }}</h2>
+				<p class="preset-card__header__genre">{{ presetsState.presets[props.id]!.genre }}</p>
 			</div>
 
-			<p class="preset-card__description">{{ state.games[props.id]!.description }}</p>
+			<p class="preset-card__description">{{ presetsState.presets[props.id]!.description }}</p>
 
 			<div class="preset-card__categories-container">
-				<div v-for="tag in state.games[props.id]!.tags" class="preset-card__category">{{ tag }}</div>
+				<div v-for="tag in presetsState.presets[props.id]!.tags" class="preset-card__category">{{ tag }}</div>
 			</div>
 
 		</div>

@@ -7,7 +7,7 @@ export const enum CutCodes {
 
 type EndSuccessStatus = { needCut: false, fall: true, message: string } | { needCut: boolean, fall: false };
 
-class TokenManager {
+export class TokenManager {
 	private lastTotalTokens: number;
 	private perMessageLimit: number;
 	private maxTokensSet: number;
@@ -27,6 +27,7 @@ class TokenManager {
 	}
 
 	updateLastTotalTokens(total_tokens: number){
+		console.log(`updateLastTotalTokens() call. values:\ntotal_tokens: ${total_tokens}`);
 		this.lastTotalTokens = total_tokens;
 	}
 
@@ -53,10 +54,11 @@ class TokenManager {
 	}
 
 	checkEndSuccess(total_tokens: number, finish_reason: string): EndSuccessStatus {
-
+		console.log('checkEndSuccess() call');
 		let ret: EndSuccessStatus;
 
 		if (this.maxTokensSet < total_tokens) {
+			console.log(`checkEndSuccess(): maxTokensSet=${this.maxTokensSet}, total_tokens=${total_tokens}`);
 			return { needCut: false, fall: true, message: "Неверное значение максимального размера окна контекста! Проверьте в настройках" };
 		}
 		else if (finish_reason === "length") {
@@ -65,9 +67,8 @@ class TokenManager {
 		else{
 			ret = { needCut: false, fall: false };	
 		}
+		console.log(`calling this.updateLastTotalTokens with total_tokens = ${total_tokens}`);
 		this.updateLastTotalTokens(total_tokens);
 		return ret;
 	}
 }
-
-export const tokenManager = new TokenManager();

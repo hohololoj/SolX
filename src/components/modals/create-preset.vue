@@ -1,44 +1,65 @@
 <script setup lang="ts">
-import { ModalsList, useUIState } from "@/composables/useUIState";
 import ModalHeader from "../blocks/modalHeader.vue";
 import ButtonCancel from "../ui/buttonCancel.vue";
 import ButtonOk from "../ui/buttonOk.vue";
-import { computed, onMounted, ref, watch } from "vue";
-import { useGlobalState, type EditGame, type Game } from "@/composables/useGlobalState.ts";
+import { computed, onMounted, ref } from "vue";
 import ButtonTranslate from "../ui/buttonTranslate.vue";
-import { useChat } from "@/composables/useChat.ts";
+import { composer } from "@/composables/useComposer.ts";
+import type { EditPreset, HandlePreset } from "@/composables/presetsController.ts";
+import { ModalsList } from "@/composables/uiController.ts";
 
-const {UIState} = useUIState();
-const {state, pushGame, updateGame} = useGlobalState();
-const {translate} = useChat();
+const presetsController = composer.presetsController;
+const chatController = composer.chatController;
+const uiController = composer.uiController;
+
+const presetsState = presetsController.getPresetsState();
+const uiState = uiController.getUIState();
 
 function handleClickClose(){
-	UIState.activeModal = ModalsList.NOTHING;
+	uiController.closeModal();
+}
+
+function updateExistingPreset(preset: EditPreset){
+	const {tags, ...rest} = preset;
+	const hPreset: HandlePreset = {
+		tags: tags.replace(/\s/g, '').split(','),
+		...rest
+	}
+	presetsController.updatePreset(hPreset);
+}
+
+function createNewPreset(preset: EditPreset){
+	const {tags, ...rest} = preset;
+	const hPreset: HandlePreset = {
+		tags: tags.replace(/\s/g, '').split(','),
+		...rest
+	}
+	presetsController.createPreset(hPreset);
 }
 
 function handleClickSave(){
 	if(!valid.value){return}
-	if(UIState.activeModal === ModalsList.CREATE){
-		pushGame(workGame.value);
+	if(uiState.activeModal === ModalsList.CREATE){
+		createNewPreset(workGame.value);
 	}
-	else if(UIState.activeModal === ModalsList.EDIT){
-		updateGame(workGame.value);
+	else if(uiState.activeModal === ModalsList.EDIT){
+		updateExistingPreset(workGame.value);
 	}
 	else{
 		alert("Unknown action");
 		return;
 	}
-	UIState.activeModal = ModalsList.NOTHING;
+	uiController.closeModal();
 }
 
 async function handleTranslateClick(){
 	const str = workGame.value.sysPrompt;
-	const translation = await translate(str);
+	const translation = await chatController.translate(str);
 	if(!translation){return}
 	workGame.value.sysPrompt = translation;
 }
 
-const workGame = ref<EditGame>({
+const workGame = ref<EditPreset>({
 	name: '',
 	description: '',
   	genre: '',
@@ -48,13 +69,19 @@ const workGame = ref<EditGame>({
 });
 
 onMounted(() => {
-	if (UIState.activeModal === ModalsList.EDIT && state.selectedEditGame) {
-		workGame.value = { ...state.selectedEditGame }
-	} else if (UIState.activeModal === ModalsList.CREATE) {
+	if (uiState.activeModal === ModalsList.EDIT && presetsState.selectedEditPreset){
+		const preset = presetsState.presets[presetsState.selectedEditPreset];
+		if(!preset){
+			alert("Preset not found");
+			return;
+		}
+		const {tags, ...rest} = preset;
+		workGame.value = { id: presetsState.selectedEditPreset, tags: tags.join(', '), ...rest };
+	} else if (uiState.activeModal === ModalsList.CREATE) {
 		workGame.value = { name: '', description: '', genre: '', tags: '', sysPrompt: '', id: -1 }
 	}
 	else{
-		alert(`unknown work mode, got UIState.activeModal = ${UIState.activeModal} and state.selectedEditGame = ${!!state.selectedEditGame}`);
+		alert(`unknown work mode, got UIState.activeModal = ${uiState.activeModal} and selectedEditPreset = ${presetsState.selectedEditPreset}`);
 		return
 	}
 })
@@ -74,7 +101,7 @@ const valid = computed(() => {
 
 <template>
 	<div class="create-preset__container">
-		<ModalHeader>{{ UIState.activeModal === ModalsList.CREATE ? 'Создание пресета' : 'Редактирование пресета' }}</ModalHeader>
+		<ModalHeader>{{ uiState.activeModal === ModalsList.CREATE ? 'Создание пресета' : 'Редактирование пресета' }}</ModalHeader>
 		<div class="create-preset__body">
 
 			<div class="create-preset__body__item">
@@ -171,8 +198,5 @@ const valid = computed(() => {
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
-	}
-	.create-preset__body__item__textarea{
-
 	}
 </style>

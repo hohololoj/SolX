@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { reactive } from "vue";
+import { composer } from "@/composables/useComposer.ts";
 import IconAttachment from "../icons/icon-attachment.vue";
-import IconSend from "../icons/icon-send.vue";
-import { useChat } from "@/composables/useChat.ts";
 
-const {chatState, sendMessage, cancelLastMessage} = useChat();
+const chatController = composer.chatController;
+const chatState = chatController.getChatState();
 
 function handleNewLine(){
 	return;
 }
 async function handleSend(){
-	const res = await sendMessage(chatState.userInput);
+	const res = await chatController.sendMessage(chatState.userInput);
 	if(!res.status){
-		cancelLastMessage();
 		alert(res.message);
 		return;
 	}

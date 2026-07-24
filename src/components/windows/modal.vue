@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ModalsList, useUIState } from "@/composables/useUIState.ts";
 import DeleteConfirm from "../modals/delete-confirm.vue";
 import CreatePreset from "../modals/create-preset.vue";
+import { composer } from "@/composables/useComposer.ts";
+import { ModalsList } from "@/composables/uiController.ts";
 
-const {UIState} = useUIState();
+const uiState = composer.uiController.getUIState();
 
 </script>
 
 <template>
 	<div class="modal__container">
-		<DeleteConfirm v-if="UIState.activeModal === ModalsList.DELETE_CONFIRM"/>
-		<CreatePreset v-if="UIState.activeModal === ModalsList.CREATE || UIState.activeModal === ModalsList.EDIT"/>
+		<DeleteConfirm v-if="uiState.activeModal === ModalsList.DELETE_CONFIRM"/>
+		<CreatePreset v-if="uiState.activeModal === ModalsList.CREATE || uiState.activeModal === ModalsList.EDIT"/>
 	</div>
 </template>
 

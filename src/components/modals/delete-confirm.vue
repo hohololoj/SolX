@@ -1,43 +1,35 @@
 <script setup lang="ts">
-import { ModalsList, useUIState } from "@/composables/useUIState.ts";
-import ButtonClose from "../ui/buttonClose.vue";
 import ButtonOk from "../ui/buttonOk.vue";
 import ButtonCancel from "../ui/buttonCancel.vue";
 import ModalHeader from "../blocks/modalHeader.vue";
 import { computed } from "vue";
-import { useGlobalState } from "@/composables/useGlobalState.ts";
+import { composer } from "@/composables/useComposer.ts";
 
-const {UIState} = useUIState();
-const {state, deleteGame} = useGlobalState();
+const uiController = composer.uiController;
+const presetsController = composer.presetsController;
 
-const id = computed(() => {
-	const id = state.selectedGameIdToDelete;
-	if (id === null) {
-		alert("game id to delete is null");
-		return -1;
-	}
-	return id;
-})
+const presetsState = presetsController.getPresetsState();
 
 const name = computed(() => {
-	if(!state.games[id.value]){
+	if(!presetsController.presetsExists(presetsState.selectedDeletePreset)){
 		alert("game not found");
-		return `Не найдено игры по id ${id.value}`;
+		return `NULL (удаление не произойдет)`;
 	}
-	return `"${state.games[id.value]!.name}"`;
+	return `"${presetsState.presets[presetsState.selectedDeletePreset]!.name}"`;
 })
 
 function handleCloseClick(){
-	UIState.activeModal = ModalsList.NOTHING;
+	uiController.closeModal();
+	presetsController.resetSelectedDeletePreset();
 }
 
 function handleConfirmClick(){
-	if(!state.games[id.value]){
+	if(!presetsController.presetsExists(presetsState.selectedDeletePreset)){
 		alert("game not found");
-		return `Не найдено игры по id ${id.value}`;
+		return `Не найдено игры по id ${presetsState.selectedDeletePreset}`;
 	}
-	deleteGame(id.value);
-	UIState.activeModal = ModalsList.NOTHING;
+	presetsController.deletePreset(presetsState.selectedDeletePreset);
+	uiController.closeModal();
 }
 
 </script>

@@ -1,22 +1,10 @@
 <script setup lang="ts">
-import { useGlobalState } from "@/composables/useGlobalState";
+import { composer } from "@/composables/useComposer";
 
-	const {state, checkAI} = useGlobalState();
+	const state = composer.getAppState();
 
 	async function handleUpdateAIStatusClick(){
-		const res = await checkAI();
-		if(res === false){
-			alert("BaseURL is not reachable");
-			return;
-		}
-		if(res.ok){
-			state.AIActive = true;
-			return;
-		}
-		if(res.status === 401 || res.status === 403){
-			alert("Unauthorized error");
-		}
-		state.AIActive = false;
+		await composer.checkAI();
 	}
 
 </script>

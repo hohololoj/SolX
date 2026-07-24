@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { useChat } from "@/composables/useChat";
+import { composer } from "@/composables/useComposer";
+
 
 	type Actions = string[];
 
 	const props = defineProps<{actions: Actions}>();
-	const {sendAction} = useChat();
+	const chatController = composer.chatController;
 
 	async function handleActionClick(action: string){
-		const status = await sendAction(action);
+		const status = await chatController.sendAction(action);
 		if(!status.status){
 			alert(status.message);
 			return;

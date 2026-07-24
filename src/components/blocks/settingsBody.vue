@@ -1,30 +1,31 @@
 <script setup lang="ts">
-import { providerPresets, SettingLocalId, useSettings } from "@/composables/useSettings.ts";
 import ProviderItem from "../ui/providerItem.vue";
 import SettingsItem from "../ui/settingsItem.vue";
 import ButtonOk from "../ui/buttonOk.vue";
 import { computed } from "vue";
-import { useGlobalState, WindowsList } from "@/composables/useGlobalState.ts";
+import { composer } from "@/composables/useComposer.ts";
+import { providerPresets, SettingLocalId } from "@/consts/providers.ts";
+import { WindowsList } from "@/composables/uiController.ts";
 
-const {settings, setActivePreset, writeConfig, applyTokenLimits} = useSettings();
-const {state} = useGlobalState();
+const settings = composer.settingsController.getSettings();
+const uiController = composer.uiController;
 
 function handleSelectProviderClick(id: number){
-	setActivePreset(id);
+	composer.settingsController.setUsedProvider(id);
 }
 
 async function handleSaveSettingsClick(){
 	if(!valid.value){return}
-	await writeConfig();
-	applyTokenLimits();
-	state.activeWindow = WindowsList.PRESETS;
+	await composer.settingsController.saveSettingsFromState();
+	composer.settingsController.applyTokenLimits();
+	uiController.setActiveWindow(WindowsList.PRESETS);
 }
 
 const valid = computed(() => {
 
 	if(settings.baseUrl === ''){return false;}
 	if(settings.model === ''){return false;}
-	if(settings.activePreset != SettingLocalId && settings.token === ''){return false;}
+	if(settings.usedProvider != SettingLocalId && settings.token === ''){return false;}
 
 	return true;
 })
@@ -38,7 +39,7 @@ const valid = computed(() => {
 
 			<SettingsItem :title="'Провайдер'">
 				<div class="setting-item__providers">
-					<ProviderItem @click="() => {handleSelectProviderClick(id)}" v-for="(provider, id) in providerPresets" :active="settings.activePreset === id" :provider="provider.name" :url="provider.url"/>
+					<ProviderItem @click="() => {handleSelectProviderClick(id)}" v-for="(provider, id) in providerPresets" :active="settings.usedProvider === id" :provider="provider.name" :url="provider.url"/>
 				</div>
 			</SettingsItem>
 

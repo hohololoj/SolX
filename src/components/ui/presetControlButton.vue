@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ButtonTypes } from "@/composables/useUIState";
+import { ButtonTypes } from "@/composables/uiController";
+
 const props = defineProps<{type: ButtonTypes}>();
 const emit = defineEmits(['click']);
 </script>

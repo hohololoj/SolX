@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { useGlobalState } from "@/composables/useGlobalState.ts";
+import { composer } from "@/composables/useComposer.ts";
 import IconPlus from "../icons/icon-plus.vue";
 import IconButton from "../ui/iconButton.vue";
 import PresetCard from "../ui/presetCard.vue";
-import { ModalsList, useUIState } from "@/composables/useUIState.ts";
+import { ModalsList } from "@/composables/uiController.ts";
 
-	const {state} = useGlobalState();
-	const {UIState} = useUIState();
+const presetsController = composer.presetsController;
+const uiController = composer.uiController;
+
+const presetsState = presetsController.getPresetsState();
 
 function handleCreateClick(){
-	state.selectedEditGame = null;
-	UIState.activeModal = ModalsList.CREATE;
+	presetsController.resetSelectedToEditPreset();
+	uiController.setActiveModal(ModalsList.CREATE)
 }
 
 </script>
@@ -30,7 +32,7 @@ function handleCreateClick(){
 		</div>
 
 		<div class="presets-body__inner">
-			<PresetCard :id="id" v-for="(game, id) in state.games"/>
+			<PresetCard :id="id" v-for="(game, id) in presetsState.presets"/>
 		</div>
 
 	</div>

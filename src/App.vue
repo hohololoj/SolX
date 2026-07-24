@@ -5,11 +5,10 @@ import Chat from "./components/windows/chat.vue";
 import Modal from "./components/windows/modal.vue";
 import Presets from "./components/windows/presets.vue";
 import Settings from "./components/windows/settings.vue";
-import { useGlobalState, WindowsList } from "./composables/useGlobalState.ts";
-import { ModalsList, useUIState } from "./composables/useUIState.ts";
+import { composer } from "./composables/useComposer.ts";
+import { ModalsList, WindowsList } from "./composables/uiController.ts";
 
-const {state} = useGlobalState();
-const {UIState} = useUIState();
+const uiState = composer.uiController.getUIState();
 
 interface AsideState{
 	collapsed: boolean
@@ -23,11 +22,11 @@ const asideState = reactive<AsideState>({collapsed: false});
 	<div class="app__inner" :class="asideState.collapsed ? 'app__inner_collapsed' : ''">
 		<Aside :state="asideState" />
 		<div class="windows-container">
-			<Chat v-if="state.activeWindow === WindowsList.CHAT" />
-			<Presets v-if="state.activeWindow === WindowsList.PRESETS" />
-			<Settings v-if="state.activeWindow === WindowsList.SETTINGS" />
+			<Chat v-if="uiState.activeWindow === WindowsList.CHAT" />
+			<Presets v-if="uiState.activeWindow === WindowsList.PRESETS" />
+			<Settings v-if="uiState.activeWindow === WindowsList.SETTINGS" />
 		</div>
-		<Modal v-if="UIState.activeModal !== ModalsList.NOTHING" />
+		<Modal v-if="uiState.activeModal !== ModalsList.NOTHING" />
 	</div>
 </template>
 

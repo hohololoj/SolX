@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ModalsList, useUIState } from "@/composables/useUIState.ts";
+import { composer } from "@/composables/useComposer.ts";
 import ButtonClose from "../ui/buttonClose.vue";
 
-const {UIState} = useUIState();
+const uiController = composer.uiController;
 
 function handleCloseClick(){
-	UIState.activeModal = ModalsList.NOTHING;
+	uiController.closeModal();
 }
 
 </script>

@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { useGlobalState } from "@/composables/useGlobalState.ts";
 import ChatActions from "../blocks/chatActions.vue";
 import ChatBody from "../blocks/chatBody.vue";
 import ChatInput from "../blocks/chatInput.vue";
 import Header from "../blocks/header.vue";
 import { computed } from "vue";
-import { useChat } from "@/composables/useChat.ts";
+import { composer } from "@/composables/useComposer.ts";
 
-const {state} = useGlobalState();
-const {chatState} = useChat();
+const presetsState = composer.presetsController.getPresetsState();
+const appState = composer.getAppState();
+const chatState = composer.chatController.getChatState();
 
 const name = computed(() => {
-	if(state.selectedPlayGameId === null){return "Выберите игру из списка пресетов"}
-	if(!state.games[state.selectedPlayGameId]){
+	if(presetsState.selectedPlayPreset === -1){return "Выберите игру из списка пресетов"}
+	if(!presetsState.presets[presetsState.selectedPlayPreset]){
 		alert("Chosen game not found");
-		return "Chosen game not found"
+		return "Chosen game not found";
 	}
-	return state.games[state.selectedPlayGameId]!.name
+	return presetsState.presets[presetsState.selectedPlayPreset]!.name;
 })
 
 </script>

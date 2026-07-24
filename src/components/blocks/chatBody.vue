@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useChat } from "@/composables/useChat.ts";
+import { composer } from "@/composables/useComposer.ts";
 import ChatMessage from "../ui/chatMessage.vue";
 
-const {chatState} = useChat();
+const chatState = composer.chatController.getChatState();
 
 </script>
 
