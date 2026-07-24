@@ -94,9 +94,6 @@ jobs:
           echo "### 📦 Changes from $PREVIOUS"
           echo ""
           cat commit-messages.txt
-          echo ""
-          echo "### 📥 Download"
-          echo "- \`solx-$VERSION-windows-amd64.zip\`"
         } > release-notes.md
     - name: Create tag and release
       run: |
