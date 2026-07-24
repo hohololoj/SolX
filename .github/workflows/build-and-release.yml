@@ -1,0 +1,124 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.new_version }}
+      previous_version: ${{ steps.version.outputs.previous_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Determine version bump
+      id: version
+      run: |
+        # Получаем последний тег
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "previous_version=$LAST_TAG"
+        echo "previous_version=$LAST_TAG" >> $GITHUB_OUTPUT
+        
+        # Смотрим коммиты после последнего тега
+        COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"%s")
+        
+        # Определяем тип изменений по префиксам
+        if echo "$COMMITS" | grep -qE "^(feat!|fix!|refactor!|BREAKING CHANGE)"; then
+          BUMP="major"
+        elif echo "$COMMITS" | grep -qE "^feat"; then
+          BUMP="minor"
+        elif echo "$COMMITS" | grep -qE "^(fix|refactor|perf|docs|style|test|chore|ci|build)"; then
+          BUMP="patch"
+        else
+          BUMP="patch"  # по умолчанию patch
+        fi
+        
+        echo "Bump type: $BUMP"
+        
+        # Вычисляем новую версию
+        VERSION=${LAST_TAG#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        
+        case $BUMP in
+          major)
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+            ;;
+          minor)
+            MINOR=$((MINOR + 1))
+            PATCH=0
+            ;;
+          patch)
+            PATCH=$((PATCH + 1))
+            ;;
+        esac
+        
+        NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+        echo "New version: $NEW_VERSION"
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+  build-and-release:
+    needs: determine-version
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+        cache-dependency-path: server/go.sum
+    
+    - name: Install npm dependencies
+      run: npm ci
+    
+    - name: Build frontend
+      run: npm run build
+    
+    - name: Build Go server
+      run: |
+        cd server
+        go build -ldflags="-X main.version=${{ needs.determine-version.outputs.version }}" -o ..\dist\solx.exe
+    
+    - name: Create tag and release
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Создаём тег
+        git tag ${{ needs.determine-version.outputs.version }}
+        git push origin ${{ needs.determine-version.outputs.version }}
+        
+        # Создаём zip
+        Compress-Archive -Path dist\* -DestinationPath solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip
+        
+        # Создаём релиз через GitHub CLI
+        $body = @"
+        ## 🚀 ${{ needs.determine-version.outputs.version }}
+        
+        ### 📦 Changes from ${{ needs.determine-version.outputs.previous_version }}
+        
+        $(git log ${{ needs.determine-version.outputs.previous_version }}..HEAD --pretty=format:"- %s")
+        
+        ### 📥 Download
+        - `solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip`
+        "@
+        
+        gh release create ${{ needs.determine-version.outputs.version }} `
+          --title "${{ needs.determine-version.outputs.version }}" `
+          --notes "$body" `
+          solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
