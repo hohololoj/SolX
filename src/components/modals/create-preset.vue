@@ -7,10 +7,12 @@ import ButtonTranslate from "../ui/buttonTranslate.vue";
 import { composer } from "@/composables/useComposer.ts";
 import type { EditPreset, HandlePreset } from "@/composables/presetsController.ts";
 import { ModalsList } from "@/composables/uiController.ts";
+import { NotificationTypes, type Notification } from "@/composables/notificationController.ts";
 
 const presetsController = composer.presetsController;
 const chatController = composer.chatController;
 const uiController = composer.uiController;
+const notificationController = composer.notificationController;
 
 const presetsState = presetsController.getPresetsState();
 const uiState = uiController.getUIState();
@@ -46,7 +48,13 @@ function handleClickSave(){
 		updateExistingPreset(workGame.value);
 	}
 	else{
-		alert("Unknown action");
+		const notification: Notification = {
+			title: "Не удалось выполнить действие над пресетом",
+			message: "Неизвестное действие",
+			showTime: 6000,
+			type: NotificationTypes.FAILURE
+		}
+		notificationController.pushNotification(notification);
 		return;
 	}
 	uiController.closeModal();
@@ -72,7 +80,13 @@ onMounted(() => {
 	if (uiState.activeModal === ModalsList.EDIT && presetsState.selectedEditPreset){
 		const preset = presetsState.presets[presetsState.selectedEditPreset];
 		if(!preset){
-			alert("Preset not found");
+			const notification: Notification = {
+				title: "Не удалось загрузить пресет",
+				message: "Пресет не найден",
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			notificationController.pushNotification(notification);
 			return;
 		}
 		const {tags, ...rest} = preset;
@@ -81,8 +95,15 @@ onMounted(() => {
 		workGame.value = { name: '', description: '', genre: '', tags: '', sysPrompt: '', id: -1 }
 	}
 	else{
-		alert(`unknown work mode, got UIState.activeModal = ${uiState.activeModal} and selectedEditPreset = ${presetsState.selectedEditPreset}`);
-		return
+		const notification: Notification = {
+			title: "Не удалось загрузить пресет",
+			message: "Неизвестный режим работы",
+			showTime: 6000,
+			type: NotificationTypes.FAILURE
+		}
+		notificationController.pushNotification(notification);
+		console.log(`unknown work mode, got UIState.activeModal = ${uiState.activeModal} and selectedEditPreset = ${presetsState.selectedEditPreset}`);
+		return;
 	}
 })
 

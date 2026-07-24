@@ -5,6 +5,9 @@ import ChatInput from "../blocks/chatInput.vue";
 import Header from "../blocks/header.vue";
 import { computed } from "vue";
 import { composer } from "@/composables/useComposer.ts";
+import { NotificationTypes, type Notification } from "@/composables/notificationController.ts";
+
+const notificationController = composer.notificationController;
 
 const presetsState = composer.presetsController.getPresetsState();
 const appState = composer.getAppState();
@@ -13,7 +16,13 @@ const chatState = composer.chatController.getChatState();
 const name = computed(() => {
 	if(presetsState.selectedPlayPreset === -1){return "Выберите игру из списка пресетов"}
 	if(!presetsState.presets[presetsState.selectedPlayPreset]){
-		alert("Chosen game not found");
+		const notification: Notification = {
+			title: "Не удалось загрузить пресет",
+			message: "Пресет не найден",
+			showTime: 6000,
+			type: NotificationTypes.FAILURE
+		}
+		notificationController.pushNotification(notification);
 		return "Chosen game not found";
 	}
 	return presetsState.presets[presetsState.selectedPlayPreset]!.name;

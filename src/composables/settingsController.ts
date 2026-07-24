@@ -1,6 +1,7 @@
 import { providerPresets, SettingLocalId } from "@/consts/providers";
 import { reactive } from "vue"
 import type { ComposerType } from "./useComposer";
+import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
 
 export interface Settings{
 	baseUrl: string,
@@ -20,9 +21,12 @@ type SettingsLike = Record<keyof Settings, unknown>;
 export class SettingsController{
 
 	state!: Settings;
-	composer: ComposerType
+	composer: ComposerType;
+	notificationController: NotificationController;
+
 	constructor(composer: ComposerType){
 		this.composer = composer;
+		this.notificationController = composer.notificationController;
 	}
 
 	private validateSettingsStructure(obj: ObjectLike): boolean{
@@ -99,11 +103,13 @@ export class SettingsController{
 		})
 		if(!res.ok){
 			const body = await res.text();
-			alert(`
-				Не удалось сохранить файл настроек.
-				Проверьте: не выключен ли сервер.
-				Подробный лог ошибки в консоли
-			`);
+			const notification: Notification = {
+				title: "Не удалось сохранить файл настроек",
+				message: `Проверьте: не выключен ли сервер. Консоль сервера должна быть открыта`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			console.log(`
 				Ошибка saveSettingsFromState()
 				${res.status} ${res.statusText}
@@ -118,17 +124,27 @@ export class SettingsController{
 	async checkSettings(): Promise<boolean> {
 		const res = await this.composer.apiController.getSettings();
 		if(res === false){
-			alert(`
-				Соединение с файловым сервером не установлено.
-				Проверьте: не выключен ли сервер.	
-			`);
+			const notification: Notification = {
+				title: "Соединение с файловым сервером не установлено",
+				message: `Проверьте: не выключен ли сервер. Консоль сервера должна быть открыта`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			console.error(`checkSettings(): не удалось соединиться с сервером`);
 			return false;
 		}
 		if (!res.ok) {
 			if (res.status !== 404) {
 				const body = await res.text();
-				alert(`
+				const notification: Notification = {
+					title: "Странная ошибка requestSettings()",
+					message: `Полный лог в консоли`,
+					showTime: 6000,
+					type: NotificationTypes.FAILURE
+				}
+				this.notificationController.pushNotification(notification);
+				console.log(`
 					Случилась странная ошибка requestSettings().
 					Статус: ${res.status} ${res.statusText}
 					URL: ${res.url}
@@ -141,11 +157,13 @@ export class SettingsController{
 
 		const validSettings = await this.parseSettings(res);
 		if (!validSettings) {
-			alert(`
-					Структура файла настроек нарушена.
-					Настройки были сброшены.
-					Подробный лог в консоли.	
-				`);
+			const notification: Notification = {
+				title: "Не удалось загрузить файл настроек",
+				message: `Файл не существует / Нарушен. Настройки будут сброшены`,
+				showTime: 6000,
+				type: NotificationTypes.WARN
+			}
+			this.notificationController.pushNotification(notification);
 			return this.saveSettingsFromState();
 		}
 
@@ -161,7 +179,13 @@ export class SettingsController{
 	setUsedProvider(id: number){
 		const preset = providerPresets[id];
 		if(!preset){
-			alert(`Provider with id = ${id} doesn't exists`);
+			const notification: Notification = {
+				title: "Провайдер не существует",
+				message: `Провайдер с id = ${id} не записан`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			return;
 		}
 		this.state.baseUrl = preset.url;

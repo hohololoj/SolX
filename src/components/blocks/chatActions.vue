@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NotificationTypes, type Notification } from "@/composables/notificationController";
 import { composer } from "@/composables/useComposer";
 
 
@@ -6,11 +7,18 @@ import { composer } from "@/composables/useComposer";
 
 	const props = defineProps<{actions: Actions}>();
 	const chatController = composer.chatController;
+	const notificationController = composer.notificationController;
 
 	async function handleActionClick(action: string){
 		const status = await chatController.sendAction(action);
 		if(!status.status){
-			alert(status.message);
+			const notification: Notification = {
+				title: 'Не удалось отправить действие',
+				message: status.message,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			notificationController.pushNotification(notification);
 			return;
 		}
 	}

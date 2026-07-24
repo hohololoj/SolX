@@ -54,11 +54,9 @@ export class TokenManager {
 	}
 
 	checkEndSuccess(total_tokens: number, finish_reason: string): EndSuccessStatus {
-		console.log('checkEndSuccess() call');
 		let ret: EndSuccessStatus;
 
 		if (this.maxTokensSet < total_tokens) {
-			console.log(`checkEndSuccess(): maxTokensSet=${this.maxTokensSet}, total_tokens=${total_tokens}`);
 			return { needCut: false, fall: true, message: "Неверное значение максимального размера окна контекста! Проверьте в настройках" };
 		}
 		else if (finish_reason === "length") {
@@ -67,7 +65,6 @@ export class TokenManager {
 		else{
 			ret = { needCut: false, fall: false };	
 		}
-		console.log(`calling this.updateLastTotalTokens with total_tokens = ${total_tokens}`);
 		this.updateLastTotalTokens(total_tokens);
 		return ret;
 	}

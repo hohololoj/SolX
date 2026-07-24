@@ -5,6 +5,7 @@ import { APIController } from "./APIController";
 import { UIController } from "./uiController";
 import { PresetsController } from "./presetsController";
 import { ChatController } from "./chatController";
+import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
 
 interface AppState{
 	AIActive: boolean,
@@ -13,6 +14,7 @@ interface AppState{
 class Composer{
 
 	state!: AppState;
+	notificationController!: NotificationController;
 	apiController!: APIController;
 	tokenManager: TokenManager;
 	settingsController!: SettingsController;
@@ -43,20 +45,40 @@ class Composer{
 	async checkAI(): Promise<boolean>{
 		const response = await this.apiController.checkAIServer();
 		if(!response){
-			alert(`Не удается соединиться с ИИ провайдером.\nПроверьте соединение и BaseURL в настройках.`);
+			const notification: Notification = {
+				title: "Не удается соединиться с ИИ провайдером",
+				message: `Проверьте соединение c провайдером или BaseURL в настройках`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			this.setAIActive(false);
 			return false;
 		}
 		if(!response.ok){
 
 			if(response.status === 403 || response.status === 401){
-				alert("Ошибка доступа: провайдер отклонил доступ по токену");
+				const notification: Notification = {
+					title: "Ошибка авторизации",
+					message: `Провайдер отклонил запрос по токену`,
+					showTime: 6000,
+					type: NotificationTypes.FAILURE
+				}
+				this.notificationController.pushNotification(notification);
 				this.setAIActive(false);
 				return false;
 			}
 
 			const body = await response.text();
-			alert(`Провайдер не доступен / Ошибка в URL.\nПодробный лог в консоли.`);
+			
+			const notification: Notification = {
+				title: "Ошибка подключения к провайдеру",
+				message: `Провайдер не доступен / Ошибка в URL. Лог в консоли`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
+
 			console.log(`
 				Status: ${response.status} ${response.statusText}
 				URL: ${response.url}
@@ -79,6 +101,7 @@ class Composer{
 	async init(): Promise<boolean>{
 
 		this.initAppState();
+		this.notificationController = new NotificationController();
 		this.settingsController = new SettingsController(this);
 		this.apiController = new APIController(this);
 

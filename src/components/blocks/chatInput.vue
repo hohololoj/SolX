@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { composer } from "@/composables/useComposer.ts";
 import IconAttachment from "../icons/icon-attachment.vue";
+import { NotificationTypes, type Notification } from "@/composables/notificationController.ts";
 
 const chatController = composer.chatController;
+const notificationController = composer.notificationController;
+
 const chatState = chatController.getChatState();
 
 function handleNewLine(){
@@ -11,7 +14,13 @@ function handleNewLine(){
 async function handleSend(){
 	const res = await chatController.sendMessage(chatState.userInput);
 	if(!res.status){
-		alert(res.message);
+		const notification: Notification = {
+			title: 'Не удалось отправить сообщение',
+			message: res.message,
+			showTime: 6000,
+			type: NotificationTypes.FAILURE
+		}
+		notificationController.pushNotification(notification);
 		return;
 	}
 }

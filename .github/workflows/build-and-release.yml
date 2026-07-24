@@ -62,12 +62,14 @@ jobs:
         echo "New version: $NEW_VERSION"
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-  build-and-release:
+build-and-release:
     needs: determine-version
     runs-on: windows-latest
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -93,32 +95,37 @@ jobs:
         go build -ldflags="-X main.version=${{ needs.determine-version.outputs.version }}" -o ..\dist\solx.exe
     
     - name: Create tag and release
+      shell: pwsh
       run: |
+        $VERSION = "${{ needs.determine-version.outputs.version }}"
+        $PREVIOUS = "${{ needs.determine-version.outputs.previous_version }}"
+        
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         
+        # Собираем коммиты ДО создания тега
+        $commits = git log $PREVIOUS..HEAD --pretty=format:"- %s"
+        
         # Создаём тег
-        git tag ${{ needs.determine-version.outputs.version }}
-        git push origin ${{ needs.determine-version.outputs.version }}
+        git tag $VERSION
+        git push origin $VERSION
         
         # Создаём zip
-        Compress-Archive -Path dist\* -DestinationPath solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip
+        Compress-Archive -Path dist\* -DestinationPath solx-$VERSION-windows-amd64.zip
         
-        # Создаём релиз через GitHub CLI
+        # Формируем тело релиза
         $body = @"
-        ## 🚀 ${{ needs.determine-version.outputs.version }}
+## 🚀 $VERSION
+
+### 📦 Changes from $PREVIOUS
+
+$commits
+
+"@
         
-        ### 📦 Changes from ${{ needs.determine-version.outputs.previous_version }}
-        
-        $(git log ${{ needs.determine-version.outputs.previous_version }}..HEAD --pretty=format:"- %s")
-        
-        ### 📥 Download
-        - `solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip`
-        "@
-        
-        gh release create ${{ needs.determine-version.outputs.version }} `
-          --title "${{ needs.determine-version.outputs.version }}" `
+        gh release create $VERSION `
+          --title "$VERSION" `
           --notes "$body" `
-          solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip
+          solx-$VERSION-windows-amd64.zip
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
