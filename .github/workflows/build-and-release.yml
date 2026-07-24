@@ -1,9 +1,9 @@
 name: Build and Release
-
 on:
   push:
     branches: [ main, master ]
-
+permissions:
+  contents: write
 jobs:
   determine-version:
     runs-on: ubuntu-latest
@@ -14,19 +14,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
     - name: Determine version bump
       id: version
       run: |
-        # Получаем последний тег
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         echo "previous_version=$LAST_TAG"
         echo "previous_version=$LAST_TAG" >> $GITHUB_OUTPUT
-        
-        # Смотрим коммиты после последнего тега
         COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"%s")
-        
-        # Определяем тип изменений по префиксам
         if echo "$COMMITS" | grep -qE "^(feat!|fix!|refactor!|BREAKING CHANGE)"; then
           BUMP="major"
         elif echo "$COMMITS" | grep -qE "^feat"; then
@@ -34,15 +28,11 @@ jobs:
         elif echo "$COMMITS" | grep -qE "^(fix|refactor|perf|docs|style|test|chore|ci|build)"; then
           BUMP="patch"
         else
-          BUMP="patch"  # по умолчанию patch
+          BUMP="patch"
         fi
-        
         echo "Bump type: $BUMP"
-        
-        # Вычисляем новую версию
         VERSION=${LAST_TAG#v}
         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-        
         case $BUMP in
           major)
             MAJOR=$((MAJOR + 1))
@@ -57,75 +47,70 @@ jobs:
             PATCH=$((PATCH + 1))
             ;;
         esac
-        
         NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
         echo "New version: $NEW_VERSION"
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-build-and-release:
+  build-and-release:
     needs: determine-version
     runs-on: windows-latest
-    
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22'
         cache: 'npm'
-    
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.22'
         cache-dependency-path: server/go.sum
-    
     - name: Install npm dependencies
       run: npm ci
-    
     - name: Build frontend
       run: npm run build
-    
+    - name: Create dist directory
+      run: New-Item -ItemType Directory -Force -Path dist
     - name: Build Go server
       run: |
         cd server
         go build -ldflags="-X main.version=${{ needs.determine-version.outputs.version }}" -o ..\dist\solx.exe
-    
-    - name: Create tag and release
-      shell: pwsh
+    - name: Get commit messages
+      id: commits
+      shell: bash
       run: |
-        $VERSION = "${{ needs.determine-version.outputs.version }}"
-        $PREVIOUS = "${{ needs.determine-version.outputs.previous_version }}"
-        
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        
-        # Собираем коммиты ДО создания тега
-        $commits = git log $PREVIOUS..HEAD --pretty=format:"- %s"
-        
-        # Создаём тег
-        git tag $VERSION
-        git push origin $VERSION
-        
-        # Создаём zip
-        Compress-Archive -Path dist\* -DestinationPath solx-$VERSION-windows-amd64.zip
-        
-        # Формируем тело релиза
-        $body = @"
+        COMMITS=$(git log ${{ needs.determine-version.outputs.previous_version }}..HEAD --pretty=format:"- %s")
+        # Заменяем переносы строк на специальный маркер для безопасной передачи
+        ESCAPED_COMMITS=$(echo "$COMMITS" | sed ':a;N;$!ba;s/\n/\\n/g')
+        echo "commits=$ESCAPED_COMMITS" >> $GITHUB_OUTPUT
+    - name: Create release notes file
+      shell: bash
+      run: |
+        VERSION="${{ needs.determine-version.outputs.version }}"
+        PREVIOUS="${{ needs.determine-version.outputs.previous_version }}"
+        COMMITS="${{ steps.commits.outputs.commits }}"
+        # Восстанавливаем переносы строк
+        COMMITS=$(echo -e "$COMMITS")
+        cat > release-notes.md << EOF
 ## 🚀 $VERSION
 
 ### 📦 Changes from $PREVIOUS
 
-$commits
+$COMMITS
 
-"@
-        
-        gh release create $VERSION `
-          --title "$VERSION" `
-          --notes "$body" `
-          solx-$VERSION-windows-amd64.zip
+### 📥 Download
+- \`solx-$VERSION-windows-amd64.zip\`
+EOF
+    - name: Create tag and release
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        $VERSION = "${{ needs.determine-version.outputs.version }}"
+        git tag $VERSION
+        git push origin $VERSION
+        Compress-Archive -Path "dist\*" -DestinationPath "solx-$VERSION-windows-amd64.zip"
+        gh release create $VERSION --title "$VERSION" --notes-file release-notes.md "solx-$VERSION-windows-amd64.zip"
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
