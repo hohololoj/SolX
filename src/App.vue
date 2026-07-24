@@ -7,6 +7,7 @@ import Presets from "./components/windows/presets.vue";
 import Settings from "./components/windows/settings.vue";
 import { composer } from "./composables/useComposer.ts";
 import { ModalsList, WindowsList } from "./composables/uiController.ts";
+import Notification from "./components/windows/notification.vue";
 
 const uiState = composer.uiController.getUIState();
 
@@ -27,6 +28,7 @@ const asideState = reactive<AsideState>({collapsed: false});
 			<Settings v-if="uiState.activeWindow === WindowsList.SETTINGS" />
 		</div>
 		<Modal v-if="uiState.activeModal !== ModalsList.NOTHING" />
+		<Notification />
 	</div>
 </template>
 
@@ -37,6 +39,7 @@ const asideState = reactive<AsideState>({collapsed: false});
 		display: grid;
 		grid-template: 100% / 240px 1fr;
 		transition: grid-template-columns 0.2s ease;
+		position: relative;
 	}
 	.app__inner_collapsed{
 		grid-template: 100% / 69px 1fr;

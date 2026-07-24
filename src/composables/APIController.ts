@@ -1,3 +1,4 @@
+import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
 import type { DataPreset } from "./presetsController";
 import type { SettingsController } from "./settingsController";
 import type { ComposerType } from "./useComposer";
@@ -6,10 +7,12 @@ export class APIController{
 
 	private composer: ComposerType;
 	private settingsController: SettingsController;
+	private notificationController: NotificationController;
 
 	constructor(composer: ComposerType){
 		this.composer = composer;
 		this.settingsController = composer.settingsController;
+		this.notificationController = composer.notificationController;
 	}
 
 	async checkAIServer(): Promise<Response | false> {
@@ -41,10 +44,13 @@ export class APIController{
 			});
 			if(!res.ok){
 				const body = await res.text();
-				alert(`
-					Файловый сервер отклонил запрос.
-					Полный лог в консоли.	
-				`);
+				const notification: Notification = {
+					title: "Не удалось выполнить запрос",
+					message: "Файловый сервер отклонил запрос.\nПолный лог в консоли",
+					showTime: 6000,
+					type: NotificationTypes.FAILURE
+				}
+				this.notificationController.pushNotification(notification);
 				console.log(`
 					${res.status} ${res.statusText}
 					URL: ${res.url}
@@ -55,10 +61,13 @@ export class APIController{
 			return true;
 		}
 		catch (err) {
-			alert(`
-				Соединение с файловым сервером не установлено.
-				Проверьте: не выключен ли сервер.
-			`);
+			const notification: Notification = {
+				title: "Не удалось выполнить запрос",
+				message: "Соединение с файловым сервером не установлено.\nПроверьте: не выключен ли сервер.",
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			return false;
 		}
 	}

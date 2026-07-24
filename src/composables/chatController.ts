@@ -2,6 +2,7 @@ import { reactive } from "vue";
 import type { ComposerType } from "./useComposer";
 import type { SettingsController } from "./settingsController";
 import { CutCodes } from "./tokenManager";
+import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
 
 interface Message {
 	role: 'system' | 'user' | 'assistant',
@@ -71,10 +72,12 @@ export class ChatController{
 	private state!: ChatState;
 	private composer: ComposerType;
 	private settingsController: SettingsController;
+	private notificationController: NotificationController;
 
 	constructor(composer: ComposerType){
 		this.composer = composer;
 		this.settingsController = this.composer.settingsController;
+		this.notificationController = this.composer.notificationController;
 		this.initChatState();
 	}
 
@@ -91,10 +94,15 @@ export class ChatController{
 	private async sendAIRequest(messages?: Message[]): Promise<Message | false> {
 		let messagesToSend: Message[];
 		const countTokens = !messages;
-		console.log(`messages: ${messages}`);
-		console.log(`i need to count tokens: ${countTokens}`);
 		if (!messages && !this.state.sysMessage) {
-			alert("No system message defined");
+			const notification: Notification = {
+				title: "Невозможно отправить запрос на генерацию.",
+				message: "Что-то пошло не так и системное сообщение не определено.\nПродолжать сессию чата невозможно, попробуйте начать новый чат.\nПолный лог в консоли.",
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
+			console.log(`Системное сообщение undefined в sendAIRequest().\nПолный дамп state: ${this.state}`);
 			return false;
 		}
 		messagesToSend = messages ? messages : [{ role: 'system', content: this.state.sysMessage! }, ...this.state.messagesWindow];
@@ -120,12 +128,24 @@ export class ChatController{
 			if (countTokens) {
 				const status = this.composer.tokenManager.checkEndSuccess(data.usage.total_tokens, data.choices[0]!.finish_reason);
 				if (status.fall) {
-					alert(status.message);
+					const notification: Notification = {
+						title: "Фатальное исключение менеджера",
+						message: status.message,
+						showTime: 6000,
+						type: NotificationTypes.FAILURE
+					}
+					this.notificationController.pushNotification(notification);
 					return false;
 				}
 				if (status.needCut) {
 					if (this.state.messages.length <= 1) {
-						alert("Невозможно уменьшать длину диалога дальше. В выделенное окно контекста не помещается даже минимальный диалог");
+						const notification: Notification = {
+							title: "Фатальная ошибка",
+							message: "Невозможно уменьшать длину диалога дальше. В выделенное окно контекста не помещается даже минимальный диалог",
+							showTime: 6000,
+							type: NotificationTypes.FAILURE
+						}
+						this.notificationController.pushNotification(notification);
 						return false;
 					}
 					this.state.messages.splice(0, 2);
@@ -135,7 +155,14 @@ export class ChatController{
 			return data.choices[0]!.message as Message;
 		}
 		catch (err) {
-			alert(`Failed to fetch #103: ${err}`);
+			const notification: Notification = {
+				title: "Фатальная ошибка",
+				message: `Fetch не удался. Полный лог в консоли`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
+			console.log(`Ошибка fetch: ${err}`);
 			return false;
 		}
 	}
@@ -311,8 +338,14 @@ export class ChatController{
 	defineNewChat(presetId: number){
 		const preset = this.composer.presetsController.getPresetById(presetId);
 		if (preset === undefined) {
-			alert(`Game with id=${presetId} is not found!`);
-			console.log(`defineNewChat(): Preset Not Found, received id = ${presetId}`);
+			const notification: Notification = {
+				title: "Пресет не найден",
+				message: `Что-то пошло не так. Пресет не найден. Полный лог в консоли`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
+			console.log(`defineNewChat(): Preset Not Found, received id = ${presetId}\npresets: ${this.composer.presetsController.getPresetsState().presets}`);
 			return;
 		}
 

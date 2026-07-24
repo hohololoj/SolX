@@ -5,11 +5,13 @@ import IconEdit from "../icons/icon-edit.vue";
 import IconDelete from "../icons/icon-delete.vue";
 import { composer } from "@/composables/useComposer.ts";
 import { ButtonTypes, ModalsList, WindowsList } from "@/composables/uiController.ts";
+import { NotificationTypes, type Notification } from "@/composables/notificationController.ts";
 
 const presetsController = composer.presetsController;
 
 const uiController = composer.uiController;
 const chatController = composer.chatController;
+const notificationController = composer.notificationController;
 
 const presetsState = presetsController.getPresetsState();
 
@@ -26,7 +28,13 @@ function handleStartClick(id: number){
 }
 function handleEditClick(id: number){
 	if(!presetsState.presets[id]){
-		alert("something went wrong, game not found");
+		const notification: Notification = {
+			title: "Не удалось загрузить пресет",
+			message: "Пресет не найден",
+			showTime: 6000,
+			type: NotificationTypes.FAILURE
+		}
+		notificationController.pushNotification(notification);
 		return;
 	}
 	presetsController.selectPresetToEdit(id);

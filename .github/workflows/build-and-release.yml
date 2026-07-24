@@ -112,8 +112,6 @@ jobs:
         
         $(git log ${{ needs.determine-version.outputs.previous_version }}..HEAD --pretty=format:"- %s")
         
-        ### 📥 Download
-        - `solx-${{ needs.determine-version.outputs.version }}-windows-amd64.zip`
         "@
         
         gh release create ${{ needs.determine-version.outputs.version }} `

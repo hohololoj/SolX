@@ -1,5 +1,6 @@
 import { reactive } from "vue";
 import type { ComposerType } from "./useComposer";
+import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
 
 export interface DataPreset{
 	name: string;
@@ -30,11 +31,13 @@ interface PresetsState{
 
 export class PresetsController{
 
-	composer: ComposerType;
 	state!: PresetsState;
+	composer: ComposerType;
+	notificationController: NotificationController;
 
 	constructor(composer: ComposerType){
 		this.composer = composer;
+		this.notificationController = composer.notificationController;
 	}
 
 	private initState(){
@@ -59,10 +62,13 @@ export class PresetsController{
 			}
 		})();
 		if(presets === false){
-			alert(`
-				Структура сохранения пресетов была нарушена.
-				Пресеты не могут быть загружены и будут очищены.	
-			`);
+			const notification: Notification = {
+				title: "Не удалось загрузить пресеты из файла.",
+				message: `Структура нарушена / Файл не существует. Пресеты будут сброшены`,
+				showTime: 6000,
+				type: NotificationTypes.WARN
+			}
+			this.notificationController.pushNotification(notification);
 			console.error("parseSettings(): фэйл .json()");
 			return false
 		}
@@ -73,10 +79,13 @@ export class PresetsController{
 	private async loadPresets(): Promise<boolean>{
 		const res = await this.composer.apiController.getPresets();
 		if(res === false){
-			alert(`
-				Соединение с сервером не установлено.
-				Проверьте: не выключен ли сервер.	
-			`);
+			const notification: Notification = {
+				title: "Соединение с сервером не установлено",
+				message: `Проверьте: не выключен ли сервер. Окно консоли должно быть открыто`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			console.error(`loadPresets(): не удалось соединиться с сервером`);
 			return false;
 		}
@@ -104,10 +113,13 @@ export class PresetsController{
 
 		const id = hPreset.id;
 		if(this.state.presets[id] === undefined){
-			alert(`
-				Запрашиваемый на обновление пресет не найден.
-				Подробный лог в консоли.	
-			`);
+			const notification: Notification = {
+				title: "Пресет не найден",
+				message: `Запрашиваемый на обновление пресет не найден. Подробный лог в консоли.`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			console.log(`
 				Пресеты в памяти: ${this.state.presets}\n
 				Пресет запрошен: id = ${hPreset.id}
@@ -142,10 +154,13 @@ export class PresetsController{
 			}
 		})();
 		if(status instanceof Error){
-			alert(`
-				Ошибка удаления.
-				Подробный лог в консоли.	
-			`);
+			const notification: Notification = {
+				title: "Ошибка удаления",
+				message: `Что-то пошло не так. Полный лог в консоли`,
+				showTime: 6000,
+				type: NotificationTypes.FAILURE
+			}
+			this.notificationController.pushNotification(notification);
 			console.log(`
 				Ошибка удаления:
 				${status}
