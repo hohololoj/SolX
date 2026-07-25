@@ -17,10 +17,16 @@ jobs:
     - name: Determine version bump
       id: version
       run: |
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        # Get the most recent tag by commit date
+        LAST_TAG=$(git tag --sort=-creatordate | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
+        if [ -z "$LAST_TAG" ]; then
+          LAST_TAG="v0.0.0"
+        fi
         echo "previous_version=$LAST_TAG"
         echo "previous_version=$LAST_TAG" >> $GITHUB_OUTPUT
+        
         COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"%s")
+        
         if echo "$COMMITS" | grep -qE "^(feat!|fix!|refactor!|BREAKING CHANGE)"; then
           BUMP="major"
         elif echo "$COMMITS" | grep -qE "^feat"; then
@@ -30,9 +36,12 @@ jobs:
         else
           BUMP="patch"
         fi
+        
         echo "Bump type: $BUMP"
+        
         VERSION=${LAST_TAG#v}
         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        
         case $BUMP in
           major)
             MAJOR=$((MAJOR + 1))
@@ -47,6 +56,7 @@ jobs:
             PATCH=$((PATCH + 1))
             ;;
         esac
+        
         NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
         echo "New version: $NEW_VERSION"
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT

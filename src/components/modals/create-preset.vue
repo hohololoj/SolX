@@ -64,7 +64,7 @@ async function handleTranslateClick(){
 	const str = workGame.value.sysPrompt;
 	const translation = await chatController.translate(str);
 	if(!translation){return}
-	workGame.value.sysPrompt = translation;
+	workGame.value.sysPrompt = translation.text;
 }
 
 const workGame = ref<EditPreset>({
