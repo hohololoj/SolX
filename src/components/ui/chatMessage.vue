@@ -1,12 +1,42 @@
 <script setup lang="ts">
+import type { Content } from "@/composables/chatController";
+import { composer } from "@/composables/useComposer";
+
+	const uiController = composer.uiController;
 
 	export interface Message{
-		author: string,
-		message: string,
-		isUser: boolean
+		author: string;
+		content: Content | Content[];
+		isUser: boolean;
 	}
 
-	const props = defineProps<Message>()
+	const props = defineProps<Message>();
+
+	const images: string[] = [];
+	const texts: string[] = [];
+	
+	function extractContentItem(item: Content){
+		if(item.type === "text"){
+			texts.push(item.text);
+		}
+		else{
+			images.push(item.image_url.url);
+		}
+	}
+
+	if(!Array.isArray(props.content)){
+		extractContentItem(props.content);
+	}
+	else{
+		props.content.map((contentItem) => {
+			extractContentItem(contentItem);
+		})
+	}
+
+	function handleFullScreenOpen(base64: string){
+		uiController.showImageInFullScreen(base64)
+	}
+
 </script>
 
 <template>
@@ -18,7 +48,10 @@
 		
 		<div class="chat-message__body">
 			<p class="chat-message__from" :class="props.isUser ? 'chat-message__from_user' : 'chat-message__from_ai'">{{ props.author }}</p>
-			<p class="chat-message__content" :class="props.isUser ? 'chat-message__content_user' : 'chat-message__content_ai'">{{ props.message }}</p>
+			<p class="chat-message__content" :class="props.isUser ? 'chat-message__content_user' : 'chat-message__content_ai'" v-for="text in texts">{{ text }}</p>
+			<div class="images-container">
+				<img @click="() => {handleFullScreenOpen(image)}" v-for="image in images" :src="image" alt="" class="images-container__item">
+			</div>
 		</div>
 
 	</div>
@@ -55,6 +88,25 @@
 		gap: 4px;
 		width: 100%;
 		height: fit-content;
+	}
+	.images-container{
+		width: 100%;
+		display: flex;
+		gap: 15px;
+		flex-wrap: wrap;
+	}
+	.images-container__item{
+		width: auto;
+		height: auto;
+		max-width: 160px;
+		max-height: 160px;
+		object-fit: cover;
+		cursor: pointer;
+		transition: filter 0.3s ease;
+		border-radius: 8px;
+	}
+	.images-container__item:hover{
+		filter: brightness(0.5);
 	}
 	.chat-message__from{
 		font-size: 12px;

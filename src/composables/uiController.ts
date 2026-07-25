@@ -4,7 +4,7 @@ import type { ComposerType } from "./useComposer";
 export const enum WindowsList{
 	CHAT = 1,
 	PRESETS = 2,
-	SETTINGS = 3
+	SETTINGS = 3,
 }
 
 export const enum ButtonTypes{
@@ -17,7 +17,8 @@ export const enum ModalsList{
 	DELETE_CONFIRM = 1,
 	EDIT = 2,
 	CREATE = 3,
-	NOTHING = 4
+	FULLSCREEN_IMAGE = 4,
+	NOTHING = 5
 }
 
 const DEFAULT_ACTIVE_WINDOW = WindowsList.PRESETS;
@@ -25,7 +26,8 @@ const DEFAULT_ACTIVE_WINDOW = WindowsList.PRESETS;
 interface UIState{
 	activeWindow: WindowsList,
 	createPresetActive: boolean,
-	activeModal: ModalsList
+	activeModal: ModalsList,
+	imageToShow_base64: string
 }
 
 export class UIController{
@@ -38,7 +40,8 @@ export class UIController{
 		this.state = reactive<UIState>({
 			activeWindow: DEFAULT_ACTIVE_WINDOW,
 			createPresetActive: false,
-			activeModal: ModalsList.NOTHING
+			activeModal: ModalsList.NOTHING,
+			imageToShow_base64: ''
 		});
 	}
 
@@ -56,6 +59,15 @@ export class UIController{
 		this.state.activeModal = ModalsList.NOTHING;
 	}
 
+	showImageInFullScreen(base64: string){
+		this.state.imageToShow_base64 = base64;
+		this.state.activeModal = ModalsList.FULLSCREEN_IMAGE;
+	}
+	closeFullScreenImage(){
+		this.state.imageToShow_base64 = '';
+		this.state.activeModal = ModalsList.NOTHING;
+	}
+	
 	getUIState(): Readonly<UIState>{
 		return this.state;
 	}

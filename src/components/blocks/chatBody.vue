@@ -14,7 +14,7 @@ const chatState = composer.chatController.getChatState();
 					v-for="message in chatState.messages"
 					:author="message.role === 'user' ? 'User' : 'AI'"
 					:is-user="message.role === 'user'"
-					:message="message.content"
+					:content="message.content"
 				/>
 			</div>
 		</div>

@@ -3,6 +3,7 @@ import DeleteConfirm from "../modals/delete-confirm.vue";
 import CreatePreset from "../modals/create-preset.vue";
 import { composer } from "@/composables/useComposer.ts";
 import { ModalsList } from "@/composables/uiController.ts";
+import FullscreenImage from "../modals/fullscreen-image.vue";
 
 const uiState = composer.uiController.getUIState();
 
@@ -12,6 +13,7 @@ const uiState = composer.uiController.getUIState();
 	<div class="modal__container">
 		<DeleteConfirm v-if="uiState.activeModal === ModalsList.DELETE_CONFIRM"/>
 		<CreatePreset v-if="uiState.activeModal === ModalsList.CREATE || uiState.activeModal === ModalsList.EDIT"/>
+		<FullscreenImage v-if="uiState.activeModal === ModalsList.FULLSCREEN_IMAGE"/>
 	</div>
 </template>
 

@@ -3,14 +3,14 @@ import type { DataPreset } from "./presetsController";
 import type { SettingsController } from "./settingsController";
 import type { ComposerType } from "./useComposer";
 
+const FILE_SERVER_URL = "";
+
 export class APIController{
 
-	private composer: ComposerType;
 	private settingsController: SettingsController;
 	private notificationController: NotificationController;
 
 	constructor(composer: ComposerType){
-		this.composer = composer;
 		this.settingsController = composer.settingsController;
 		this.notificationController = composer.notificationController;
 	}
@@ -37,7 +37,7 @@ export class APIController{
 
 	async writePresets(presets: DataPreset[]): Promise<boolean> {
 		try {
-			const res = await fetch('/presets', {
+			const res = await fetch(`${FILE_SERVER_URL}/presets`, {
 				method: 'POST',
 				body: JSON.stringify(presets),
 				headers: { 'Content-Type': 'application/json' }
@@ -74,7 +74,7 @@ export class APIController{
 	
 	async getSettings(): Promise<Response | false>{
 		try{
-			const res = await fetch('/config.json',{
+			const res = await fetch(`${FILE_SERVER_URL}/config.json`,{
 				cache: 'no-store'
 			});
 			return res;
@@ -86,7 +86,7 @@ export class APIController{
 
 	async getPresets(): Promise<Response | false>{
 		try{
-			const res = await fetch('/presets.json', {
+			const res = await fetch(`${FILE_SERVER_URL}/presets.json`, {
 				cache: 'no-store'
 			});
 			return res;

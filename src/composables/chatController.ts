@@ -4,17 +4,31 @@ import type { SettingsController } from "./settingsController";
 import { CutCodes } from "./tokenManager";
 import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
 
+export interface TextContent{
+	type: 'text',
+	text: string
+};
+export interface ImageContent{
+	type: 'image_url',
+	image_url: {
+		url: string,
+		detail?: 'auto' | 'high' | 'low'
+	}
+}
+export type Content = TextContent | ImageContent;
+
 interface Message {
 	role: 'system' | 'user' | 'assistant',
-	content: string
+	content: Content[]
 };
 
 interface ChatState {
-	messages: Message[],
-	messagesWindow: Message[],
-	actions: string[],
-	userInput: string,
-	sysMessage: string | null,
+	messages: Message[];
+	messagesWindow: Message[];
+	actions: string[];
+	userInput: string;
+	userFiles: string[];
+	sysMessage: string | null;
 }
 
 interface AIRawResponse{
@@ -87,11 +101,20 @@ export class ChatController{
 			messagesWindow: [],
 			actions: [],
 			userInput: '',
+			userFiles: [],
 			sysMessage: null,
 		})
 	}
 
-	private async sendAIRequest(messages?: Message[]): Promise<Message | false> {
+	private buildSysMessage(): Message {
+		const content: Content = {
+			type: "text",
+			text: this.state.sysMessage!
+		}
+		return { role: 'system', content: [content] }
+	}
+
+	private async sendAIRequest(messages?: Message[]): Promise<TextContent | false> {
 		let messagesToSend: Message[];
 		const countTokens = !messages;
 		if (!messages && !this.state.sysMessage) {
@@ -105,7 +128,7 @@ export class ChatController{
 			console.log(`Системное сообщение undefined в sendAIRequest().\nПолный дамп state: ${this.state}`);
 			return false;
 		}
-		messagesToSend = messages ? messages : [{ role: 'system', content: this.state.sysMessage! }, ...this.state.messagesWindow];
+		messagesToSend = messages ? messages : [this.buildSysMessage(), ...this.state.messagesWindow];
 
 		try {
 			const res = await fetch(`${this.settingsController.getBaseURL()}/v1/chat/completions`, {
@@ -152,7 +175,10 @@ export class ChatController{
 					return await this.sendAIRequest();
 				}
 			}
-			return data.choices[0]!.message as Message;
+			return {
+				type: 'text',
+				text: data.choices[0]!.message.content
+			};
 		}
 		catch (err) {
 			const notification: Notification = {
@@ -167,7 +193,7 @@ export class ChatController{
 		}
 	}
 
-	async translate(str: string): Promise<string | false> {
+	async translate(str: string): Promise<TextContent | false> {
 		
 		if(!this.composer.getAIState()){
 			const status = await this.composer.checkAI();
@@ -179,15 +205,21 @@ export class ChatController{
 		const messages: Message[] = [
 			{
 				role: 'system',
-				content: TRANSLATOR_PROMPT
+				content: [{
+					type: "text",
+					text: TRANSLATOR_PROMPT
+				}]
 			},
 			{
 				role: 'user',
-				content: str
+				content: [{
+					type: 'text',
+					text: str
+				}]
 			}
 		];
 		const response = await this.sendAIRequest(messages);
-		return response ? response.content : false;
+		return response ? response : false;
 	}
 
 	cancelLastMessage() {
@@ -205,6 +237,7 @@ export class ChatController{
 	}
 
 	async sendAction(action: string): Promise<{status: false, message: string} | {status: true}>{
+		this.state.userFiles = [];
 		const status = await this.composer.checkAI();
 		if(!status){return {status: false, message: 'something went wrong'}}
 	
@@ -233,7 +266,10 @@ export class ChatController{
 		this.state.userInput = '';
 		this.state.actions = [];
 	
-		this.pushMessage({role: 'user', content: action});
+		this.pushMessage({role: 'user', content: [{
+			type: 'text',
+			text: action
+		}]});
 		const response = await this.sendAIRequest();
 	
 		if(!response){
@@ -243,7 +279,7 @@ export class ChatController{
 		}
 	
 		try {
-			let jsonStr = response.content.trim();
+			let jsonStr = response.text.trim();
 			if(jsonStr.startsWith("```")) {
 				jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, "");
 				jsonStr = jsonStr.replace(/\s*```$/, "");
@@ -251,7 +287,7 @@ export class ChatController{
 	
 			const json = JSON.parse(jsonStr);
 			const answMessage: Message = {
-				role: response.role,
+				role: "assistant",
 				content: json.message
 			};
 			this.pushMessage(answMessage);
@@ -290,16 +326,39 @@ export class ChatController{
 		}
 
 		const actionsCpy = this.state.actions;
+		const filesCpy = this.state.userFiles;
 
 		const restoreChatState = () => {
 			this.state.userInput = message;
 			this.state.actions = actionsCpy;
+			this.state.userFiles = filesCpy;
 		}
 
 		this.state.userInput = '';
 		this.state.actions = [];
+		this.state.userFiles = [];
 
-		this.pushMessage({ role: 'user', content: message });
+		const messageToSend: Message = {
+			role: 'user',
+			content: []
+		};
+
+		messageToSend.content.push({
+			type: 'text',
+			text: message
+		})
+
+		messageToSend.content.push(...filesCpy.map((base64) => {
+			return {
+				type: 'image_url',
+				image_url: {
+					url: base64,
+					detail: 'auto'
+				}
+			} as Content
+		}))
+
+		this.pushMessage(messageToSend);
 		const response = await this.sendAIRequest();
 
 		if (!response) {
@@ -309,7 +368,7 @@ export class ChatController{
 		}
 
 		try {
-			let jsonStr = response.content.trim();
+			let jsonStr = response.text.trim();
 			if (jsonStr.startsWith("```")) {
 				jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, "");
 				jsonStr = jsonStr.replace(/\s*```$/, "");
@@ -317,8 +376,11 @@ export class ChatController{
 
 			const json = JSON.parse(jsonStr);
 			const answMessage: Message = {
-				role: response.role,
-				content: json.message
+				role: "assistant",
+				content: [{
+					type: 'text',
+					text: json.message
+				}]
 			};
 			this.pushMessage(answMessage);
 			this.state.actions = json.actions;
@@ -329,6 +391,40 @@ export class ChatController{
 			restoreChatState();
 			return { status: false, message: 'Model respond with not valid JSON' }
 		}
+	}
+
+	async pushNewFiles(fileInput: HTMLInputElement){
+		const rawFiles = fileInput.files;
+		if(!rawFiles || rawFiles.length === 0){return;}
+		const rawFilesArray = [...rawFiles];
+
+		const promises = rawFilesArray.map((rawFile) => new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.onerror = () => {
+				const notification: Notification = {
+					title: "Что-то пошло не так",
+					message: `Не удалось прочитать картинку ${rawFile.name}. Полный лог в консоли`,
+					showTime: 6000,
+					type: NotificationTypes.FAILURE
+				}
+				this.notificationController.pushNotification(notification);
+				resolve({status: false})
+			}
+			reader.onload = () => resolve({status: true, result: reader.result as string});
+			reader.readAsDataURL(rawFile);
+		}));
+		const readFiles = await Promise.all(promises) as ({status: false}|{status: true, result: string})[];
+
+		const succeedFiles = readFiles.filter((readFile) => {
+			return readFile.status
+		}).map(item => item.result);
+
+		this.state.userFiles.push(...succeedFiles);
+		fileInput.value = '';
+	}
+
+	removeFileByIndex(idx: number){
+		this.state.userFiles.splice(idx, 1);
 	}
 
 	getChatState(): Readonly<ChatState>{

@@ -2,15 +2,16 @@
 import { composer } from "@/composables/useComposer.ts";
 import IconAttachment from "../icons/icon-attachment.vue";
 import { NotificationTypes, type Notification } from "@/composables/notificationController.ts";
+import { ref } from "vue";
+import ImagePreview from "./imagePreview.vue";
 
 const chatController = composer.chatController;
 const notificationController = composer.notificationController;
 
 const chatState = chatController.getChatState();
 
-function handleNewLine(){
-	return;
-}
+const hiddenFileInput = ref<HTMLInputElement>();
+
 async function handleSend(){
 	const res = await chatController.sendMessage(chatState.userInput);
 	if(!res.status){
@@ -25,21 +26,29 @@ async function handleSend(){
 	}
 }
 
+function handleAttachFileClick(){
+	hiddenFileInput.value?.click();
+}
+function handleHiddenInputFileSelect(e: Event){
+	chatController.pushNewFiles(hiddenFileInput.value!);
+}
+
 </script>
 
 <template>
 	<div class="chat-input__container">
-		<div class="chat-input__textarea__container">
+		<ImagePreview/>
 
-			<IconAttachment/>
+		<div class="chat-input__textarea__container">
+			<input accept="image/png, image/jpeg, image/webp, image/gif" ref="hiddenFileInput" @change="handleHiddenInputFileSelect" type="file" class="hidden-file-input">
+			<IconAttachment @click="handleAttachFileClick"/>
 			<textarea class="chat-input__textarea" placeholder="Опишите своё действие или выберите вариант выше"
 				@keydown.enter.exact.prevent="handleSend"
-    			@keydown.shift.enter="handleNewLine"
     			v-model="chatState.userInput"
 			></textarea>
 			<!-- <IconSend/> -->
-
 		</div>
+
 		<div class="chat-input__hint__container">
 			<p class="chat-input__hint">Enter — отправить · Shift+Enter — новая строка</p>
 		</div>
@@ -47,12 +56,15 @@ async function handleSend(){
 </template>
 
 <style>
+	.hidden-file-input{
+		display: none;
+	}
 	.chat-input__container{
 		width: 100%;
 		height: fit-content;
 		padding: 12px 460px 16px 460px;
 		display: grid;
-		grid-template: 1fr min-content / 100%;
+		grid-template: min-content 1fr min-content / 100%;
 		row-gap: 6px;
 		background: var(--color-main-side);
 		border-top: 1px solid var(--color-border);
