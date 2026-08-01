@@ -79,6 +79,7 @@ import { composer } from "@/composables/useComposer";
 		align-items: center;
 		justify-content: center;
 		font-size: 12px;
+		user-select: none;
 	}
 	.chat-message__avatar_ai{
 		background: linear-gradient(to bottom right, #6366f1, #8b5cf6);
