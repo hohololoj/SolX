@@ -6,7 +6,7 @@ import { composer } from "@/composables/useComposer";
 
 	export interface Message{
 		author: string;
-		content: Content | Content[];
+		content: Content | Content[] | string;
 		isUser: boolean;
 	}
 
@@ -15,7 +15,11 @@ import { composer } from "@/composables/useComposer";
 	const images: string[] = [];
 	const texts: string[] = [];
 	
-	function extractContentItem(item: Content){
+	function extractContentItem(item: Content| string){
+		if(typeof item === "string"){
+			texts.push(item);
+			return;
+		}
 		if(item.type === "text"){
 			texts.push(item.text);
 		}

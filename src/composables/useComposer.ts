@@ -31,7 +31,6 @@ class Composer{
 		this.tokenManager.setPerMessageLimit(maxTokensPerMessage);
 	}
 
-
 	initAppState(){
 		this.state = reactive<AppState>({
 			AIActive: false,

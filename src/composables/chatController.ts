@@ -222,12 +222,15 @@ export class ChatController{
 		return response ? response : false;
 	}
 
-	cancelLastMessage() {
+	cancelLastMessage(){
+		console.log(`cancelLastMessage() call`);
+		console.log(`this.state.messages: `, this.state.messages);
+		console.log(`this.state.messagesWindow: `, this.state.messagesWindow);
 		if (this.state.messages.length > 0) {
-			this.state.messages = this.state.messages.splice(-1, 1);
+			this.state.messages.splice(-1, 1);
 		}
 		if (this.state.messagesWindow.length > 0) {
-			this.state.messagesWindow = this.state.messagesWindow.splice(-1, 1);
+			this.state.messagesWindow.splice(-1, 1);
 		}
 	}
 
@@ -369,10 +372,14 @@ export class ChatController{
 
 		try {
 			let jsonStr = response.text.trim();
+			if(__DEBUG__){
+				console.log(jsonStr);
+			}
 			if (jsonStr.startsWith("```")) {
 				jsonStr = jsonStr.replace(/^```(?:json)?\s*/i, "");
 				jsonStr = jsonStr.replace(/\s*```$/, "");
 			}
+			console.log(jsonStr);
 
 			const json = JSON.parse(jsonStr);
 			const answMessage: Message = {
@@ -387,6 +394,9 @@ export class ChatController{
 			return { status: true };
 		}
 		catch (err: unknown) {
+			if(__DEBUG__){
+				console.log(err);
+			}
 			this.cancelLastMessage();
 			restoreChatState();
 			return { status: false, message: 'Model respond with not valid JSON' }

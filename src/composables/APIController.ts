@@ -16,10 +16,19 @@ export class APIController{
 	}
 
 	async checkAIServer(): Promise<Response | false> {
+
+		if(__DEBUG__){
+			console.log(`checkAIServer() call`);
+		}
+
 		const baseURL = this.settingsController.getBaseURL();
+		if(__DEBUG__){
+			console.log(`\tbaseURL: ${baseURL}`);
+		}
 		if(baseURL === ""){
 			return false;
 		}
+
 		try {
 			const res = await fetch(`${baseURL}/v1/models`, {
 				method: "GET",
@@ -28,20 +37,32 @@ export class APIController{
 					"Authorization": `Bearer ${this.settingsController.getToken()}`
 				}
 			});
+			if(__DEBUG__){
+				console.log(`\tres: ${res}`);
+			}
 			return res;
 		}
-		catch {
+		catch(err){
+			if(__DEBUG__){
+				console.log(`\terr: ${err}`);
+			}
 			return false;
 		}
 	}
 
 	async writePresets(presets: DataPreset[]): Promise<boolean> {
+		if(__DEBUG__){
+			console.log(`\twritePresets() call. presets: ${presets}`);
+		}
 		try {
 			const res = await fetch(`${FILE_SERVER_URL}/presets`, {
 				method: 'POST',
 				body: JSON.stringify(presets),
 				headers: { 'Content-Type': 'application/json' }
 			});
+			if(__DEBUG__){
+				console.log(`\tres: ${res}`);
+			}
 			if(!res.ok){
 				const body = await res.text();
 				const notification: Notification = {
