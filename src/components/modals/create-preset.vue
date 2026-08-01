@@ -156,7 +156,7 @@ const valid = computed(() => {
 			<div class="create-preset__body__item">
 				<p class="create-preset__body__item__label">Описание игры</p>
 				<div class="create-preset__body__item__input-container create-preset__body__item__sysprompt">
-					<textarea v-model="workGame.sysPrompt" class="create-preset__body__item__input create-preset__body__item__textarea"></textarea>
+					<textarea rows="5" v-model="workGame.sysPrompt" class="create-preset__body__item__input create-preset__body__item__textarea"></textarea>
 					<ButtonTranslate @click="handleTranslateClick"/>
 				</div>
 			</div>
@@ -172,6 +172,7 @@ const valid = computed(() => {
 <style>
 	.create-preset__container{
 		width: 720px;
+		height: fit-content;
 		display: flex;
 		flex-direction: column;
 		background: var(--color-main);
@@ -200,7 +201,7 @@ const valid = computed(() => {
 		grid-template: 38px / 1fr;
 	}
 	.create-preset__body__item__sysprompt{
-		grid-template: 38px / 1fr 38px;
+		grid-template: min-content / 1fr 38px;
 		column-gap: 8px;
 	}
 	.create-preset__body__item__input{
@@ -219,5 +220,11 @@ const valid = computed(() => {
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
+	}
+	.create-preset__body__item__textarea{
+		height: fit-content;
+		max-height: 400px;
+		min-height: 38px;
+		field-sizing: content;
 	}
 </style>

@@ -13,6 +13,7 @@ const emit = defineEmits(['click']);
 
 <style>
 	.button-translate{
+		height: 38px;
 		background: var(--color-input);
 		border: 1px solid var(--color-border);
 		cursor: pointer;
