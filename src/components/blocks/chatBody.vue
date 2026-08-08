@@ -1,14 +1,27 @@
 <script setup lang="ts">
 import { composer } from "@/composables/useComposer.ts";
 import ChatMessage from "../ui/chatMessage.vue";
+import { nextTick, ref, watch } from "vue";
 
 const chatState = composer.chatController.getChatState();
+
+const chatInner = ref<HTMLElement | null>(null);
+
+watch(
+	() => chatState.messages.length,
+	async () => {
+		await nextTick();
+		if (chatInner.value) {
+			chatInner.value.scrollTop = chatInner.value.scrollHeight;
+		}
+	}
+);
 
 </script>
 
 <template>
 	<div class="chat-body__container">
-		<div class="chat-body__inner">
+		<div ref="chatInner" class="chat-body__inner">
 			<div class="chat-body__line">
 				<ChatMessage 
 					v-for="message in chatState.messages"
