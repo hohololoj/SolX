@@ -31,10 +31,10 @@ const name = computed(() => {
 </script>
 
 <template>
-	<div class="chat-container" :class="chatState.actions.length !== 0 ? 'chat-container_actions' : 'chat-container_no-actions'">
+	<div class="chat-container" :class="!chatState.actions || chatState.actions.length !== 0 ? 'chat-container_actions' : 'chat-container_no-actions'">
 		<Header>{{ name }}</Header>
 		<ChatBody/>
-		<ChatActions :actions="chatState.actions" v-if="chatState.actions.length !== 0"/>
+		<ChatActions :actions="chatState.actions" v-if="chatState.actions && chatState.actions.length !== 0"/>
 		<ChatInput/>
 	</div>
 </template>

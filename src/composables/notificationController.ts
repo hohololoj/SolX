@@ -39,8 +39,6 @@ export class NotificationController{
 			return;
 		}
 
-		console.log(firstNotification);
-
 		if(firstNotification.showTime !== undefined && this.timeout === null){
 			this.timeout = setTimeout(() => {
 				this.shiftNotification();

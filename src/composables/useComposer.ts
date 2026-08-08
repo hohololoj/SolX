@@ -6,6 +6,7 @@ import { UIController } from "./uiController";
 import { PresetsController } from "./presetsController";
 import { ChatController } from "./chatController";
 import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
+import { ToolManager } from "./toolManager";
 
 interface AppState{
 	AIActive: boolean,
@@ -21,6 +22,7 @@ class Composer{
 	uiController!: UIController;
 	presetsController!: PresetsController;
 	chatController!: ChatController;
+	toolManager!: ToolManager;
 
 	constructor(){
 		this.tokenManager = new TokenManager();
@@ -100,6 +102,7 @@ class Composer{
 	async init(): Promise<boolean>{
 
 		this.initAppState();
+		this.toolManager = new ToolManager();
 		this.notificationController = new NotificationController();
 		this.settingsController = new SettingsController(this);
 		this.apiController = new APIController(this);

@@ -3,6 +3,8 @@ import type { ComposerType } from "./useComposer";
 import type { SettingsController } from "./settingsController";
 import { CutCodes } from "./tokenManager";
 import { NotificationController, NotificationTypes, type Notification } from "./notificationController";
+import { ToolParser, TOOLS } from "@/consts/tools";
+import type { ToolManager } from "./toolManager";
 
 export interface TextContent{
 	type: 'text',
@@ -18,8 +20,10 @@ export interface ImageContent{
 export type Content = TextContent | ImageContent;
 
 interface Message {
-	role: 'system' | 'user' | 'assistant',
+	role: 'system' | 'user' | 'assistant' | 'tool',
 	content: Content[];
+	tool_call_id?: string;
+	tool_calls?: any[]
 };
 
 interface ChatState {
@@ -73,6 +77,8 @@ const SYS_PROMPT =
 }
 message — текстовое содержание хода.
 actions — массив строк с предлагаемыми действиями (Обычно 3, максимум 6). Игрок может выбрать из них или ввести своё.
+Также тебе доступны вызовы tools. Если тебе нужно вызвать tools - игнорируй все требования выше, content тебе заполнять не нужно вообще.
+когда вызываешь tools - используй нативный, стандартный tool_calls (не внутри сообщения, а которое отдельным полем), парсер это поймет, это сообщение не пойдет пользователю
 Пользователь выбрал игру со следующим описанием:\n`;
 
 const TRANSLATOR_PROMPT =
@@ -87,11 +93,13 @@ export class ChatController{
 	private composer: ComposerType;
 	private settingsController: SettingsController;
 	private notificationController: NotificationController;
+	private toolManager: ToolManager;
 
 	constructor(composer: ComposerType){
 		this.composer = composer;
 		this.settingsController = this.composer.settingsController;
 		this.notificationController = this.composer.notificationController;
+		this.toolManager = this.composer.toolManager;
 		this.initChatState();
 	}
 
@@ -129,6 +137,7 @@ export class ChatController{
 			return false;
 		}
 		messagesToSend = messages ? messages : [this.buildSysMessage(), ...this.state.messagesWindow];
+		console.log(JSON.stringify(messagesToSend));
 
 		try {
 			const res = await fetch(`${this.settingsController.getBaseURL()}/v1/chat/completions`, {
@@ -141,6 +150,8 @@ export class ChatController{
 					model: this.settingsController.getModel(),
 					messages: messagesToSend,
 					temperature: this.settingsController.getTemperature(),
+					tools: TOOLS,
+					tool_choice: "auto"
 				})
 			});
 			if (!res.ok) {
@@ -152,7 +163,7 @@ export class ChatController{
 				const status = this.composer.tokenManager.checkEndSuccess(data.usage.total_tokens, data.choices[0]!.finish_reason);
 				if (status.fall) {
 					const notification: Notification = {
-						title: "Фатальное исключение менеджера",
+						title: "Фатальное исключение менеджера токенов",
 						message: status.message,
 						showTime: 6000,
 						type: NotificationTypes.FAILURE
@@ -174,6 +185,38 @@ export class ChatController{
 					this.state.messages.splice(0, 2);
 					return await this.sendAIRequest();
 				}
+			}
+			if(data.choices[0]!.message.tool_calls && data.choices[0]!.message.tool_calls.length !== 0){
+				const tool_messages: Message[] = [];
+				for(const tool of data.choices[0]!.message.tool_calls){
+					const toolCtx = new ToolParser(tool).parse();
+					console.log('toolCtx: ', toolCtx);
+					const cbWrapper = this.toolManager.getBinding(toolCtx.name || '');
+					const cbResult = cbWrapper(toolCtx.arguments || {});
+					console.log(cbResult);
+
+					tool_messages.push({
+						role: 'tool',
+						tool_call_id: toolCtx.id,
+						content: [{
+							type: 'text',
+							text: JSON.stringify(cbResult)
+						}]
+					})
+					
+				}
+				this.state.messagesWindow.push({
+					role: 'assistant',
+					content: [{
+						type: 'text',
+						text: JSON.stringify({
+							content: data.choices[0]!.message.content,
+						})
+					}],
+					tool_calls: data.choices[0]!.message.tool_calls
+				})
+				this.state.messagesWindow.push(...tool_messages);
+				return await this.sendAIRequest();
 			}
 			return {
 				type: 'text',
@@ -263,7 +306,7 @@ export class ChatController{
 	
 		const restoreChatState = () => {
 			this.state.userInput = messageCpy;
-			this.state.actions = actionsCpy;
+			this.state.actions = actionsCpy || [];
 		}
 		
 		this.state.userInput = '';
@@ -295,7 +338,7 @@ export class ChatController{
 				content: json.message
 			};
 			this.pushMessage(answMessage);
-			this.state.actions = json.actions;
+			this.state.actions = json.actions || [];
 			return { status: true };
 		}
 		// catch (err: unknown) {
@@ -352,7 +395,7 @@ export class ChatController{
 
 		const restoreChatState = () => {
 			this.state.userInput = message;
-			this.state.actions = actionsCpy;
+			this.state.actions = actionsCpy || [];
 			this.state.userFiles = filesCpy;
 		}
 
@@ -408,7 +451,7 @@ export class ChatController{
 				}]
 			};
 			this.pushMessage(answMessage);
-			this.state.actions = json.actions;
+			this.state.actions = json.actions || [];
 			return { status: true };
 		}
 		// catch (err: unknown) {
