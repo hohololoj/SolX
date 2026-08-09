@@ -9,9 +9,10 @@ const props = defineProps<{collapsed: boolean}>();
 <template>
 	<div class="logo__container" :class="props.collapsed ? 'logo__container_translated' : ''">
 		<div v-if="!props.collapsed" class="logo__wrapper">
-			<div class="logo-image">
+			<img class="logo-image" src="/logo.svg" alt="">
+			<!-- <div class="logo-image">
 				<p class="logo-image__content">AI</p>
-			</div>
+			</div> -->
 			<div class="logo-text">
 				<p class="content__title">SolX</p>
 				<p class="content__subtitle">AI Storyteller</p>
@@ -49,7 +50,7 @@ const props = defineProps<{collapsed: boolean}>();
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background: linear-gradient(to bottom right, #f5a524, #d97706);
+	/* background: linear-gradient(to bottom right, #f5a524, #d97706); */
 }
 .logo-image__content {
 	font-weight: bold;
