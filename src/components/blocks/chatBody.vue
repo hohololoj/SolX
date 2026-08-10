@@ -2,6 +2,7 @@
 import { composer } from "@/composables/useComposer.ts";
 import ChatMessage from "../ui/chatMessage.vue";
 import { nextTick, ref, watch } from "vue";
+import MessageGenerationPlaceholder from "../ui/MessageGenerationPlaceholder.vue";
 
 const chatState = composer.chatController.getChatState();
 
@@ -29,6 +30,7 @@ watch(
 					:is-user="message.role === 'user'"
 					:content="message.content"
 				/>
+				<MessageGenerationPlaceholder v-if="chatState.generationActive"/>
 			</div>
 		</div>
 	</div>

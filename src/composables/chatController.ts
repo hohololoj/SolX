@@ -33,6 +33,7 @@ interface ChatState {
 	userInput: string;
 	userFiles: string[];
 	sysMessage: string | null;
+	generationActive: boolean;
 }
 
 interface AIRawResponse{
@@ -111,6 +112,7 @@ export class ChatController{
 			userInput: '',
 			userFiles: [],
 			sysMessage: null,
+			generationActive: false
 		})
 	}
 
@@ -123,6 +125,7 @@ export class ChatController{
 	}
 
 	private async sendAIRequest(messages?: Message[]): Promise<TextContent | false> {
+		this.state.generationActive = true;
 		let messagesToSend: Message[];
 		const countTokens = !messages;
 		if (!messages && !this.state.sysMessage) {
@@ -134,10 +137,10 @@ export class ChatController{
 			}
 			this.notificationController.pushNotification(notification);
 			console.log(`Системное сообщение undefined в sendAIRequest().\nПолный дамп state: ${this.state}`);
+			this.state.generationActive = false;
 			return false;
 		}
 		messagesToSend = messages ? messages : [this.buildSysMessage(), ...this.state.messagesWindow];
-		console.log(JSON.stringify(messagesToSend));
 
 		try {
 			const res = await fetch(`${this.settingsController.getBaseURL()}/v1/chat/completions`, {
@@ -155,6 +158,7 @@ export class ChatController{
 				})
 			});
 			if (!res.ok) {
+				this.state.generationActive = false;
 				throw (`rejected response: ${res.status} #102`);
 			}
 
@@ -169,6 +173,7 @@ export class ChatController{
 						type: NotificationTypes.FAILURE
 					}
 					this.notificationController.pushNotification(notification);
+					this.state.generationActive = false;
 					return false;
 				}
 				if (status.needCut) {
@@ -180,9 +185,11 @@ export class ChatController{
 							type: NotificationTypes.FAILURE
 						}
 						this.notificationController.pushNotification(notification);
+						this.state.generationActive = false;
 						return false;
 					}
 					this.state.messages.splice(0, 2);
+					this.state.generationActive = false;
 					return await this.sendAIRequest();
 				}
 			}
@@ -216,8 +223,10 @@ export class ChatController{
 					tool_calls: data.choices[0]!.message.tool_calls
 				})
 				this.state.messagesWindow.push(...tool_messages);
+				this.state.generationActive = false;
 				return await this.sendAIRequest();
 			}
+			this.state.generationActive = false;
 			return {
 				type: 'text',
 				text: data.choices[0]!.message.content
@@ -232,6 +241,7 @@ export class ChatController{
 			}
 			this.notificationController.pushNotification(notification);
 			console.log(`Ошибка fetch: ${err}`);
+			this.state.generationActive = false;
 			return false;
 		}
 	}
