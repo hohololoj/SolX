@@ -77,7 +77,7 @@ const workGame = ref<EditPreset>({
 });
 
 onMounted(() => {
-	if (uiState.activeModal === ModalsList.EDIT && presetsState.selectedEditPreset){
+	if (uiState.activeModal === ModalsList.EDIT && presetsState.selectedEditPreset != -1){
 		const preset = presetsState.presets[presetsState.selectedEditPreset];
 		if(!preset){
 			const notification: Notification = {

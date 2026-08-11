@@ -62,7 +62,7 @@ interface AIRawResponse{
 		logprobs: any;
 		message: {
 			role: string;
-			content: string
+			content: string;
 			reasoning_content?: string;
 			tool_calls?: any[];
 		};
