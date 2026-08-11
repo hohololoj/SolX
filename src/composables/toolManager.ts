@@ -1,4 +1,4 @@
-import { ObjectValidator, StringExpected } from "./validators";
+import { NumberValidator, ObjectValidator, StringExpected } from "./validators";
 
 interface ToolsCB{
 	[key: string]: (args: Record<string, unknown>) => ArgumentsParsingResult
@@ -28,6 +28,8 @@ export class ToolManager{
 		this.initTools();
 	}
 
+	// ============================================= Это пример тулза ====================================================
+	// в обертку приходит неизвестный объект, в обертке нужно проверить поля и вернуть результаты тулза
 	private tool_alert(args: Record<string, unknown>): ArgumentsParsingResult{
 		function Alert(message: string): CallbackStatus{
 			alert(message)
@@ -52,16 +54,38 @@ export class ToolManager{
 			}
 		}
 	}
+	// ============================================= Это пример тулза ====================================================
 
-	private tool_getTime(){
-		function getTime(): CallbackStatus{
-			const date = new Date();
+	private tool_roll(args: Record<string, unknown>): ArgumentsParsingResult {
+		function roll(min: number, max: number): number {
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		const argsValidObject = new ObjectValidator(args).hasProperty('min').hasProperty('max').validate<{ min: number, max: number }>();
+		if(!argsValidObject.result){return{
+			status: false,
+			message: "Парсер не нашел поля min или поля max"
+		}}
+		//Проверять, что min < max
+		const {num: min, result: minIsInteger} = new NumberValidator(argsValidObject.object.min).prepare().isInteger().validate();
+		if(!minIsInteger){return{
+			status: false,
+			message: 'значение min - не Integer, ожидался integer'
+		}}
+		const {num: max, result: maxIsInteger} = new NumberValidator(argsValidObject.object.max).prepare().isInteger().validate();
+		if(!maxIsInteger){return{
+			status: false,
+			message: 'значение max - не Integer, ожидался Integer'
+		}}
+		if(min > max){
 			return{
-				status: true,
-				result: `${date.toUTCString()}`
+				status: false,
+				message: 'min не может быть больше max'
 			}
 		}
-		return getTime()
+		return{
+			status: true,
+			result: roll(min, max)
+		}
 	}
 
 	private undefinedTool(): ArgumentsParsingResult{
@@ -73,8 +97,7 @@ export class ToolManager{
 
 	private initTools(){
 		this.toolBindings = {
-			'alert': this.tool_alert,
-			'getTime': this.tool_getTime
+			'roll': this.tool_roll
 		}
 	}
 

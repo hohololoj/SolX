@@ -42,34 +42,24 @@ export const TOOLS: Tool[] = [
 	{
 		type: "function",
 		function: {
-			name: "alert",
-			description: "вызывает всплывающее сообщение",
+			name: "roll",
+			description: "возвращает тебе случайное целое число",
 			parameters: {
 				type: "object",
 				properties: {
-					message: {
-						type: "string",
-						description: "Сюда передавай сообщение для вывода"
+					min: {
+						type: "number",
+						description: "минимальное число (включительно): integer"
+					},
+					max: {
+						type: "number",
+						description: "максимальное число (включительно): integer"
 					}
 				},
-				required: ['message']
+				required: ['min', 'max']
 			}
 		}
 	},
-	{
-		type: "function",
-		function: {
-			name: "getTime",
-			description: "возвращает тебе время на пк пользователя",
-			parameters: {
-				type: "object",
-				properties: {
-					
-				},
-				required: []
-			}
-		}
-	}
 ]
 
 interface ToolDefinition{
@@ -77,7 +67,7 @@ interface ToolDefinition{
 	id: string,
 	function: {
 		name: string;
-		arguments: string
+		arguments: Record<string, unknown>
 	}
 }
 
@@ -102,15 +92,16 @@ export class ToolParser{
 			this.name = functionCall.name;
 		}
 		if (functionCall.arguments !== undefined) {
-			this.arguments = (() => {
-				try{
-					return JSON.parse(functionCall.arguments)
-				}
-				catch{
-					console.log('JSON.parse аргументов упал');
-					return {}
-				}
-			})()
+			// this.arguments = (() => {
+			// 	try{
+			// 		return JSON.parse(functionCall.arguments)
+			// 	}
+			// 	catch{
+			// 		console.log('JSON.parse аргументов упал');
+			// 		return {}
+			// 	}
+			// })()
+			this.arguments = functionCall.arguments;
 		}
 	}
 

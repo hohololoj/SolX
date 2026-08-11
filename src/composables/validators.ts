@@ -104,3 +104,90 @@ export class ObjectValidator{
 	}
 
 }
+
+class NumberValidator{
+	
+	private number: number;
+	private result: boolean;
+	private skip: boolean;
+
+	constructor(number: number, skip: boolean){
+		this.number = number;
+		this.result = true;
+		this.skip = skip
+	}
+
+	private r(){
+		return this.result;
+	}
+
+	gt(num: number) {
+		this.result = this.r() && this.number > num;
+		return this;
+	}
+	gte(num: number) {
+		this.result = this.r() && this.number >= num;
+		return this;
+	}
+	lt(num: number) {
+		this.result = this.r() && this.number < num;
+		return this;
+	}
+	lte(num: number) {
+		this.result = this.r() && this.number <= num;
+		return this;
+	}
+
+	isInteger(){
+		this.result = this.r() && Number.isInteger(this.number);
+		return this;
+	}
+
+	inRange(min: number, max: number){
+		this.result = this.r() && this.number >= min && this.number <= max;
+		return this;
+	}
+
+	validate(){
+		return {
+			num: this.number as number,
+			result: this.result
+		};
+	}
+
+}
+
+class NumberValidatorWrapper{
+	
+	private number: unknown;
+
+	constructor(num: unknown){
+		this.number = num;
+	}
+
+	prepare(): NumberValidator{
+		let skip: boolean;
+		let num: number = 0;
+		if(typeof this.number === "number"){
+			num = this.number
+			skip = !isNaN(this.number);
+		}
+		else if(typeof this.number === "string"){
+			const parsed = parseFloat(this.number);
+			if(!isNaN(parsed)){
+				this.number = parsed;
+				num = parsed
+				skip = true;
+			}
+			else{
+				skip = false;
+			}
+		}
+		else{
+			skip = false;
+		}
+		return new NumberValidator(num, skip);
+	}
+
+}
+export {NumberValidatorWrapper as NumberValidator};
