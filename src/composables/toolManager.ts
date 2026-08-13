@@ -1,3 +1,5 @@
+import type { MemoryController } from "./memoryController";
+import type { ComposerType } from "./useComposer";
 import { NumberValidator, ObjectValidator, StringExpected } from "./validators";
 
 interface ToolsCB{
@@ -22,9 +24,13 @@ type ArgumentsParsingResult = CallbackStatus | ArgumentsInvalid
 export class ToolManager{
 
 	toolBindings: ToolsCB;
+	composer: ComposerType;
+	memoryController: MemoryController;
 	
-	constructor(){
+	constructor(composer: ComposerType){
 		this.toolBindings = {};
+		this.composer = composer;
+		this.memoryController = this.composer.memoryController;
 		this.initTools();
 	}
 
@@ -88,6 +94,165 @@ export class ToolManager{
 		}
 	}
 
+	private tool_save = (args: Record<string, unknown>): ArgumentsParsingResult =>{
+		console.log('[tool_save()]: args: ', args);
+		const save = (collectionName: string, value: string) => {
+			this.memoryController.save(collectionName, value);
+		}
+
+		const argsValidObject = new ObjectValidator(args)
+			.hasProperty('collectionName')
+			.hasProperty('value')
+			.validate<{
+				collectionName: string,
+				value: string
+			}>();
+		if(!argsValidObject.result){
+			return{
+				status: false,
+				message: "Не предоставлено поле collectionName или поле value"
+			}
+		}
+
+		const {result: collectionNameIsValid, str: collectionName} = new StringExpected(argsValidObject.object.collectionName).isNotEmpty().validate();
+		if(!collectionNameIsValid){
+			return{
+				status: false,
+				message: "Поле collectionName пустое или не строка"
+			}
+		}
+
+		const {result: valueIsValid, str: value} = new StringExpected(argsValidObject.object.value).isNotEmpty().validate();
+		if(!valueIsValid){
+			return{
+				status: false,
+				message: "Поле value пустое или не строка"
+			}
+		}
+
+		save(collectionName, value);
+		return{
+			status: true,
+			result: "Запись успешно сохранена"
+		}
+	}
+	private tool_edit = (args: Record<string, unknown>): ArgumentsParsingResult =>{
+
+		const edit = (collectionName: string, recordId: string, value: string) => {
+			this.memoryController.edit(collectionName, recordId, value);
+		}
+
+		const argsValidObject = new ObjectValidator(args)
+			.hasProperty('collectionName')
+			.hasProperty('recordId')
+			.hasProperty('value')
+			.validate<{collectionName: unknown, recordId: unknown, value: unknown}>()
+		if(!argsValidObject.result){
+			return{
+				status: false,
+				message: "Не предоставлено одно или несколько из полей: collectionName, recordId, value"
+			}
+		}
+
+		const {result: collectionNameIsValid, str: collectionName} = new StringExpected(argsValidObject.object.collectionName).isNotEmpty().validate();
+		if(!collectionNameIsValid){
+			return{
+				status: false,
+				message: "поле collectionName пустое или не строка"
+			}
+		}
+
+		const {result: recordIdIsValid, str: recordId} = new StringExpected(argsValidObject.object.recordId).isNotEmpty().validate();
+		if(!recordIdIsValid){
+			return{
+				status: false,
+				message: "поле recordId пустое или не строка"
+			}
+		}
+
+		const {result: valueIsValid, str: value} = new StringExpected(argsValidObject.object.value).isNotEmpty().validate();
+		if(!valueIsValid){
+			return{
+				status: false,
+				message: "поле value пустое или не строка"
+			}
+		}
+
+		edit(collectionName, recordId, value);
+		return{
+			status: true,
+			result: `Запись ${recordId} в коллекции ${collectionName} успешно обновлена`
+		}
+	}
+
+	private tool_deleteCollection = (args: Record<string, unknown>): ArgumentsParsingResult => {
+
+		const deleteCollection = (collectionName: string) => {
+			this.memoryController.deleteCollection(collectionName);
+		}
+
+		const argsValidObject = new ObjectValidator(args).hasProperty('collectionName').validate<{collectionName: unknown}>();
+
+		if(!argsValidObject.result){
+			return{
+				status: false,
+				message: "Обязательное поле collectionName не предоставлено"
+			}
+		}
+
+		const {str: collectionName, result: collectionNameIsValid} = new StringExpected(argsValidObject.object.collectionName).isNotEmpty().validate();
+		if(!collectionNameIsValid){
+			return{
+				status: false,
+				message: `Обязательное поле collectionName не string или пустое`
+			}
+		}
+
+		deleteCollection(collectionName);
+		return{
+			status: true,
+			result: `Коллекция ${collectionName} успешно удалена`
+		}
+	}
+
+	private tool_deleteRecord = (args: Record<string, unknown>): ArgumentsParsingResult => {
+
+		const deleteRecord = (collectionName: string, recordId: string) => {
+			this.memoryController.deleteRecord(collectionName, recordId);
+		}
+
+		const argsValidObject = new ObjectValidator(args).hasProperty('collectionName').hasProperty('recordId').validate<{collectionName: unknown, recordId: unknown}>();
+
+		if(!argsValidObject.result){
+			return{
+				status: false,
+				message: `Обязательно поле collectionName или recordId не предоставлено`
+			}
+		}
+
+		const {str: collectionName, result: collectionNameIsValid} = new StringExpected(argsValidObject.object.collectionName).isNotEmpty().validate();
+		if(!collectionNameIsValid){
+			return{
+				status: false,
+				message: `Значение поля collectionName не string или пустое`
+			}
+		}
+
+		const {str: recordId, result: recordIdIsValid} = new StringExpected(argsValidObject.object.recordId).isNotEmpty().validate();
+		if(!recordIdIsValid){
+			return{
+				status: false,
+				message: `Значение поля recordId не string или пустое`
+			}
+		}
+
+		deleteRecord(collectionName, recordId);
+		return{
+			status: true,
+			result: `Запись ${recordId} успешно удалена из коллекции ${collectionName}`
+		}
+	}
+
 	private undefinedTool(): ArgumentsParsingResult{
 		return {
 			status: false,
@@ -97,7 +262,11 @@ export class ToolManager{
 
 	private initTools(){
 		this.toolBindings = {
-			'roll': this.tool_roll
+			'roll': this.tool_roll,
+			'save': this.tool_save,
+			'edit': this.tool_edit,
+			'deleteRecord': this.tool_deleteRecord,
+			'deleteCollection': this.tool_deleteCollection,
 		}
 	}
 

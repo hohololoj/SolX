@@ -60,6 +60,90 @@ export const TOOLS: Tool[] = [
 			}
 		}
 	},
+	{
+		type: "function",
+		function: {
+			name: "save",
+			description: "сохраняет любую твою запись в память сессии",
+			parameters: {
+				type: "object",
+				properties: {
+					collectionName: {
+						type: "string",
+						description: "название коллекции (можешь использовать как категории/теги, это только для тебя)."
+					},
+					value: {
+						type: "string",
+						description: "сама информация записи. хранится только string, но ты можешь писать в любом удобном для тебя формате, просто оно будет сохранено как строка"
+					},
+				},
+				required: ['collectionName', 'value']
+			}
+		}
+	},
+	{
+		type: "function",
+		function: {
+			name: "edit",
+			description: "позволяет тебе изменить запись в памяти",
+			parameters: {
+				type: "object",
+				properties: {
+					collectionName: {
+						type: "string",
+						description: "название коллекции"
+					},
+					recordId: {
+						type: "string",
+						description: "id записи, которую нужно изменить"
+					},
+					value: {
+						type: "string",
+						description: "информация, которую записать вместо старой"
+					},
+				},
+				required: ['collectionName', 'recordId', 'value']
+			}
+		}
+	},
+	{
+		type: "function",
+		function: {
+			name: "deleteRecord",
+			description: "позволяет тебе удалить запись из коллекции",
+			parameters: {
+				type: "object",
+				properties: {
+					collectionName: {
+						type: "string",
+						description: "название коллекции"
+					},
+					recordId: {
+						type: "string",
+						description: "id записи, которую нужно удалить"
+					},
+				},
+				required: ['collectionName', 'recordId']
+			}
+		}
+	},
+	{
+		type: "function",
+		function: {
+			name: "deleteCollection",
+			description: "позволяет тебе удалить коллекцию",
+			parameters: {
+				type: "object",
+				properties: {
+					collectionName: {
+						type: "string",
+						description: "название коллекции"
+					},
+				},
+				required: ['collectionName']
+			}
+		}
+	},
 ]
 
 interface ToolDefinition{

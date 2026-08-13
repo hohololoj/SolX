@@ -4,6 +4,7 @@ interface StringValidation_IsString{
 }
 interface StringValidation_NotString{
 	result: false;
+	str: ''
 }
 type StringValidationResult = StringValidation_IsString | StringValidation_NotString;
 
@@ -54,7 +55,8 @@ export class StringExpected{
 		}
 		else{
 			return {
-				result: false
+				result: false,
+				str: ''
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import { NotificationController, NotificationTypes, type Notification } from "./
 import { ToolParser, TOOLS } from "@/consts/tools";
 import type { ToolManager } from "./toolManager";
 import { OUTPUT_SCHEMA } from "@/consts/outputSchema";
+import type { MemoryController } from "./memoryController";
 
 export interface TextContent{
 	type: 'text',
@@ -114,6 +115,15 @@ ${JSON.stringify(TOOLS, null, 2)}
 инструмент сам вызовет тебя снова с результатом выполнения и предыдущим контекстом.
 - Инструмент всегда присылает стандартный ответ с полями status и result. status: boolean - результат выполнения. если false - инструмент передаст ошибку в поле message.
 если true - передаст результат выполнения в поле result
+
+Так же, как ты мог заметить, у тебя есть возможность сохранять записи в память. Она будет приходить тебе в виде дампа каждое пользовательское сообщение.
+Решай сам когда тебе нужно ей воспользоваться, эта память будет жить вне твоего контекста, из контекста она не будет выброшена никогда, в отличии от старых сообщений.
+Твоя память (через вызов save) — это единственный способ сохранить предметы и факты, иначе ты их ЗАБУДЕШЬ при очистке контекста.
+Управляй памятью сам, для этого у тебя есть инструменты. ты можешь удалять записи, если посчитаешь их ненужными.
+
+Для рандома используй roll, а не придумывай случайный исход или число сам.
+
+Пользователь выбрал игру со следующим описанием:\n
 `
 
 const TRANSLATOR_PROMPT =
@@ -129,12 +139,14 @@ export class ChatController{
 	private settingsController: SettingsController;
 	private notificationController: NotificationController;
 	private toolManager: ToolManager;
+	private memoryController: MemoryController;
 
 	constructor(composer: ComposerType){
 		this.composer = composer;
 		this.settingsController = this.composer.settingsController;
 		this.notificationController = this.composer.notificationController;
 		this.toolManager = this.composer.toolManager;
+		this.memoryController = this.composer.memoryController;
 		this.initChatState();
 	}
 
@@ -187,7 +199,8 @@ export class ChatController{
 					model: this.settingsController.getModel(),
 					messages: messagesToSend,
 					temperature: this.settingsController.getTemperature(),
-					response_format: OUTPUT_SCHEMA
+					response_format: OUTPUT_SCHEMA,
+					// reasoning_effort: "none" ////отключает thinking
 				})
 			});
 			if (!res.ok) {
@@ -229,6 +242,9 @@ export class ChatController{
 			}
 			if(dataContent.tool_calls && dataContent.tool_calls.length !== 0){
 				const tool_messages: Message[] = [];
+				console.log('============== Свойства toolManager =====================');
+				console.log('this.toolManager.memoryController: ', this.toolManager.memoryController);
+				console.log('============== Свойства toolManager =====================');
 				for(const tool of dataContent.tool_calls){
 					const toolCtx = new ToolParser(tool).parse();
 					console.log('toolCtx: ', toolCtx);
@@ -270,7 +286,7 @@ export class ChatController{
 				type: NotificationTypes.FAILURE
 			}
 			this.notificationController.pushNotification(notification);
-			console.log(`Ошибка fetch: ${err}`);
+			console.log(`Ошибка fetch: `, err);
 			this.state.generationActive = false;
 			return false;
 		}
@@ -307,8 +323,6 @@ export class ChatController{
 
 	cancelLastMessage(){
 		console.log(`cancelLastMessage() call`);
-		console.log(`this.state.messages: `, this.state.messages);
-		console.log(`this.state.messagesWindow: `, this.state.messagesWindow);
 		if (this.state.messages.length > 0) {
 			this.state.messages.splice(-1, 1);
 		}
@@ -318,8 +332,38 @@ export class ChatController{
 	}
 
 	private pushMessage(message: Message) {
-		this.state.messages.push(message);
-		this.state.messagesWindow.push(message);
+		const displayMessage = structuredClone(message);
+    	this.state.messages.push(displayMessage);
+
+		console.log('pushMessage: ', message);
+
+		if(message.role === "user"){
+			console.log('this is a user message');
+			
+			let index = 0;
+			let hasText = false;
+			for(index; index < message.content.length; index++){
+				if(message.content[index]!.type === "text"){hasText = true; break;}
+			}
+			
+			console.log('hasText: ', hasText, ' index: ', index);
+
+			if(!hasText){
+				const memoryDumpMessage = `[Дамп текущей памяти, системное сообщение, не пользовательское]: ${this.memoryController.stringDump()}`
+				message.content.push({type: "text", text: memoryDumpMessage});
+			}
+			else{
+				//@ts-ignore
+				const cpy = message.content[index].text as string;
+				//@ts-ignore
+				message.content[index].text = `[Дамп текущей памяти, системное сообщение, не пользовательское]: ${this.memoryController.stringDump()}. [Сообщение пользователя]: ${cpy}`
+			}
+			this.state.messagesWindow.push(message);
+		}
+		else{
+			console.log('this is not user message');
+			this.state.messagesWindow.push(message);
+		}
 	}
 
 	async sendAction(action: string): Promise<{status: false, message: string} | {status: true}>{

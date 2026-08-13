@@ -46,7 +46,7 @@ export const OUTPUT_SCHEMA = {
 			type: "object",
 			properties: {
 				message: { type: "string", description: "Текст хода — описания, диалоги NPC, события. Только сюда пиши то, что должен увидеть пользователь как сообщение"},
-				actions: { type: "array", items: { type: "string" }, description: "Сюда пиши предполагаемые игровые действия пользователя (не твои действия, а действия пользователя в игре)" },
+				actions: { type: "array", items: { type: "string" }, description: "Сюда пиши предлагаемые пользователю варианты действий (action choices)" },
 				tool_calls: {
 					type: "array",
 					items: {
